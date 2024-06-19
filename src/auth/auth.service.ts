@@ -11,6 +11,7 @@ import { LoginUserDto } from './dto/login-user.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '@prisma/client';
+import { envs } from 'src/config/envs';
 
 @Injectable()
 export class AuthService {
@@ -36,6 +37,8 @@ export class AuthService {
       return {
         user,
         token: this.getJwtToken({ id: user.id }),
+        refreshToken: this.getJwtRefreshToken({ id: user.id }),
+        expiresIn: new Date().getTime() + 1000 * 60 * 60 * 24 * 7, // 7 days
       };
     } catch (error) {
       this.logger.error(error.message);
@@ -63,6 +66,8 @@ export class AuthService {
     return {
       user,
       token: this.getJwtToken({ id: user.id }),
+      refreshToken: this.getJwtRefreshToken({ id: user.id }),
+      expiresIn: new Date().getTime() + 1000 * 60 * 60 * 24 * 7, // 7 days
     };
   }
 
@@ -71,6 +76,8 @@ export class AuthService {
     return {
       user,
       token: this.getJwtToken({ id: user.id }),
+      refreshToken: this.getJwtRefreshToken({ id: user.id }),
+      expiresIn: new Date().getTime() + 1000 * 60 * 60 * 24 * 7, // 7 days
     };
   }
 
@@ -88,6 +95,14 @@ export class AuthService {
 
   private getJwtToken(payload: JwtPayload) {
     const token = this.jwtService.sign(payload);
+    return token;
+  }
+
+  private getJwtRefreshToken(payload: JwtPayload) {
+    const token = this.jwtService.sign(payload, {
+      expiresIn: '7d',
+      secret: envs.jwtRefreshSecret,
+    });
     return token;
   }
 }
