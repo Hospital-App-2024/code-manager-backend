@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Res } from '@nestjs/common';
 import { CodeGreenService } from './code-green.service';
 import { CreateCodeGreenDto } from './dto/create-code-green.dto';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { Response } from 'express';
 
 @Controller('code-green')
 export class CodeGreenController {
@@ -15,5 +16,15 @@ export class CodeGreenController {
   @Get()
   findAll(@Query() paginationDto: PaginationDto) {
     return this.codeGreenService.findAll(paginationDto);
+  }
+
+  @Get('report')
+  public async generateReport(@Res() response: Response) {
+    const pdfDoc = await this.codeGreenService.generatePdf();
+
+    response.setHeader('Content-Type', 'application/pdf');
+    pdfDoc.info.Title = 'Código Verde';
+    pdfDoc.pipe(response);
+    pdfDoc.end();
   }
 }
