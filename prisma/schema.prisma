@@ -22,3 +22,19 @@ enum Role {
   User
   Admin
 }
+
+model CodeGreen {
+  id         String   @id @default(cuid())
+  activeBy   String
+  createdAt  DateTime
+  location   String
+  event      String
+  operator   Operator @relation(fields: [operatorId], references: [id])
+  operatorId String
+}
+
+model Operator {
+  id        String      @id @default(cuid())
+  name      String
+  CodeGreen CodeGreen[]
+}
