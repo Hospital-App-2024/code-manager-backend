@@ -1,19 +1,29 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateCodeGreenDto } from './dto/create-code-green.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CodeGreenEntity } from './entities/code-green.entity';
-import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { PrinterService } from 'src/printer/printer.service';
 import { CodeGreenReport } from 'src/pdfTemplates/codeGreen.report';
+import { PaginationAndFilterDto } from 'src/common/dto/paginationAndFilter';
+import { OperatorService } from 'src/operator/operator.service';
 
 @Injectable()
 export class CodeGreenService {
   public constructor(
     private readonly prismaService: PrismaService,
+    private readonly operatorService: OperatorService,
     private readonly printerService: PrinterService,
   ) {}
 
   public async create(createCodeGreenDto: CreateCodeGreenDto) {
+    const operator = await this.operatorService.findOne(
+      createCodeGreenDto.operatorId,
+    );
+
+    if (!operator) {
+      throw new BadRequestException('Operator not found');
+    }
+
     const codeGreen = await this.prismaService.codeGreen.create({
       data: createCodeGreenDto,
       include: {
@@ -31,15 +41,24 @@ export class CodeGreenService {
     });
   }
 
-  public async findAll(paginationDto: PaginationDto) {
+  public async findAll(paginationAndFilterDto: PaginationAndFilterDto) {
     const totalPages = await this.prismaService.codeGreen.count();
 
-    const currentPage = paginationDto.page;
-    const perPage = paginationDto.limit;
+    const currentPage = paginationAndFilterDto.page;
+    const perPage = paginationAndFilterDto.limit;
 
     const codeGreens = await this.prismaService.codeGreen.findMany({
       skip: (currentPage - 1) * perPage,
       take: perPage,
+      orderBy: {
+        createdAt: 'desc',
+      },
+      where: {
+        createdAt: {
+          gte: paginationAndFilterDto.from,
+          lte: paginationAndFilterDto.to,
+        },
+      },
       include: {
         operator: true,
       },

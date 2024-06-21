@@ -1,8 +1,8 @@
 import { Controller, Get, Post, Body, Query, Res } from '@nestjs/common';
 import { CodeGreenService } from './code-green.service';
 import { CreateCodeGreenDto } from './dto/create-code-green.dto';
-import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { Response } from 'express';
+import { PaginationAndFilterDto } from 'src/common/dto/paginationAndFilter';
 
 @Controller('code-green')
 export class CodeGreenController {
@@ -14,8 +14,8 @@ export class CodeGreenController {
   }
 
   @Get()
-  findAll(@Query() paginationDto: PaginationDto) {
-    return this.codeGreenService.findAll(paginationDto);
+  findAll(@Query() paginationAndFilterDto: PaginationAndFilterDto) {
+    return this.codeGreenService.findAll(paginationAndFilterDto);
   }
 
   @Get('report')

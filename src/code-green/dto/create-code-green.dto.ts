@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsDate, IsString } from 'class-validator';
+import { IsBoolean, IsDate, IsString } from 'class-validator';
 
 export class CreateCodeGreenDto {
   @IsString()
@@ -13,4 +13,6 @@ export class CreateCodeGreenDto {
   event: string;
   @IsString()
   operatorId: string;
+  @IsBoolean()
+  police: boolean;
 }

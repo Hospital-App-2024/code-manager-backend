@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { CodeBlueService } from './code-blue.service';
 import { CreateCodeBlueDto } from './dto/create-code-blue.dto';
-import { UpdateCodeBlueDto } from './dto/update-code-blue.dto';
+import { PaginationAndFilterDto } from 'src/common/dto/paginationAndFilter';
 
 @Controller('code-blue')
 export class CodeBlueController {
@@ -13,22 +14,22 @@ export class CodeBlueController {
   }
 
   @Get()
-  findAll() {
-    return this.codeBlueService.findAll();
+  findAll(@Query() paginationAndFilterDto: PaginationAndFilterDto) {
+    return this.codeBlueService.findAll(paginationAndFilterDto);
+  }
+
+  @Get('report')
+  public async generateReport(@Res() response: Response) {
+    const pdfDoc = await this.codeBlueService.generatePdf();
+
+    response.setHeader('Content-Type', 'application/pdf');
+    pdfDoc.info.Title = 'Código Azul';
+    pdfDoc.pipe(response);
+    pdfDoc.end();
   }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.codeBlueService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCodeBlueDto: UpdateCodeBlueDto) {
-    return this.codeBlueService.update(+id, updateCodeBlueDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.codeBlueService.remove(+id);
   }
 }

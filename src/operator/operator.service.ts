@@ -14,11 +14,15 @@ export class OperatorService {
     });
   }
 
-  findAll() {
-    return `This action returns all operator`;
+  public async findAll() {
+    return await this.prismaService.operator.findMany();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} operator`;
+  public async findOne(id: string) {
+    return await this.prismaService.operator.findUnique({
+      where: {
+        id: id,
+      },
+    });
   }
 }

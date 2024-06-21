@@ -23,6 +23,16 @@ enum Role {
   Admin
 }
 
+model CodeBlue {
+  id         String   @id @default(cuid())
+  activeBy   String
+  createdAt  DateTime
+  location   String
+  team       String
+  operator   Operator @relation(fields: [operatorId], references: [id])
+  operatorId String
+}
+
 model CodeGreen {
   id         String   @id @default(cuid())
   activeBy   String
@@ -31,10 +41,12 @@ model CodeGreen {
   event      String
   operator   Operator @relation(fields: [operatorId], references: [id])
   operatorId String
+  police     Boolean
 }
 
 model Operator {
   id        String      @id @default(cuid())
   name      String
   CodeGreen CodeGreen[]
+  CodeBlue  CodeBlue[]
 }
