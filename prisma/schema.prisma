@@ -44,9 +44,20 @@ model CodeGreen {
   police     Boolean
 }
 
+model CodeAir {
+  id               String   @id @default(cuid())
+  activeBy         String
+  createdAt        DateTime
+  emergencyDetails String
+  location         String
+  operator         Operator @relation(fields: [operatorId], references: [id])
+  operatorId       String
+}
+
 model Operator {
   id        String      @id @default(cuid())
   name      String
   CodeGreen CodeGreen[]
   CodeBlue  CodeBlue[]
+  CodeAir   CodeAir[]
 }
