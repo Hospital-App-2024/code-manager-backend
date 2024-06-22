@@ -5,7 +5,8 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { PrinterService } from 'src/printer/printer.service';
 import { CodeBlueEntity } from './entities/code-blue.entity';
 import { OperatorService } from 'src/operator/operator.service';
-import { CodeBlueReport } from 'src/pdfTemplates/codeBlue.report';
+import { createPagination } from 'src/common/helper/createPagination';
+import { CodeReport } from 'src/pdfTemplates/code.report';
 
 @Injectable()
 export class CodeBlueService {
@@ -27,37 +28,21 @@ export class CodeBlueService {
     const codeBlue = await this.prismaService.codeBlue.create({
       data: createCodeBlueDto,
       include: {
-        operator: {
-          select: {
-            name: true,
-          },
-        },
+        operator: true,
       },
     });
 
-    return CodeBlueEntity.fromObject({
-      ...codeBlue,
-      operator: codeBlue.operator.name,
-    });
+    return CodeBlueEntity.fromObject(codeBlue);
   }
 
   public async findAll(paginationAndFilterDto: PaginationAndFilterDto) {
-    const totalPages = await this.prismaService.codeBlue.count();
-
-    const currentPage = paginationAndFilterDto.page;
-    const perPage = paginationAndFilterDto.limit;
+    const countCodeBlue = await this.prismaService.codeBlue.count();
 
     const codeBlue = await this.prismaService.codeBlue.findMany({
-      skip: (currentPage - 1) * perPage,
-      take: perPage,
+      take: paginationAndFilterDto?.limit,
+      skip: paginationAndFilterDto?.limit * (paginationAndFilterDto.page - 1),
       orderBy: {
         createdAt: 'desc',
-      },
-      where: {
-        createdAt: {
-          gte: paginationAndFilterDto.from,
-          lte: paginationAndFilterDto.to,
-        },
       },
       include: {
         operator: true,
@@ -65,40 +50,45 @@ export class CodeBlueService {
     });
 
     return {
-      data: codeBlue.map((codeBlue) =>
-        CodeBlueEntity.fromObject({
-          ...codeBlue,
-          operator: codeBlue.operator.name,
-        }),
-      ),
-      meta: {
-        total: totalPages,
-        page: currentPage,
-        lastPage: Math.ceil(totalPages / perPage),
-        nextPage:
-          currentPage + 1 <= Math.ceil(totalPages / perPage)
-            ? currentPage + 1
-            : null,
-        prevPage: currentPage - 1 > 0 ? currentPage - 1 : null,
-      },
+      data: CodeBlueEntity.mapFromArray(codeBlue),
+      meta: createPagination({
+        page: paginationAndFilterDto.page,
+        take: paginationAndFilterDto.limit,
+        count: countCodeBlue,
+      }),
     };
   }
 
   public async generatePdf() {
-    const codeBlue = await this.prismaService.codeBlue.findMany({
+    const data = await this.prismaService.codeBlue.findMany({
+      orderBy: {
+        createdAt: 'desc',
+      },
       include: {
         operator: true,
       },
     });
 
+    const codeBlue = CodeBlueEntity.mapFromArray(data);
+
     const doc = this.printerService.createPdf({
-      docDefinitions: CodeBlueReport({
-        codeBlue: codeBlue.map((codeBlue) =>
-          CodeBlueEntity.fromObject({
-            ...codeBlue,
-            operator: codeBlue.operator.name,
-          }),
-        ),
+      docDefinitions: CodeReport({
+        title: 'Reporte de Código Azul',
+        columnNames: [
+          'Fecha/Hora',
+          'Equipo',
+          'Ubicación',
+          'Activo por',
+          'Operador',
+        ],
+        columnItems: codeBlue.map((item) => [
+          item.createdAt,
+          item.team,
+          item.location,
+          item.activeBy,
+          item.operator,
+        ]),
+        widths: ['*', '*', 200, '*', '*'],
       }),
     });
 
