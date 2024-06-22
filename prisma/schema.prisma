@@ -54,10 +54,22 @@ model CodeAir {
   operatorId       String
 }
 
+model CodeRed {
+  id                    String   @id @default(cuid())
+  createdAt             DateTime
+  activeBy              String
+  operator              Operator @relation(fields: [operatorId], references: [id])
+  operatorId            String
+  location              String
+  COGRID                Boolean
+  firefighterCalledTime DateTime?
+}
+
 model Operator {
   id        String      @id @default(cuid())
   name      String
   CodeGreen CodeGreen[]
   CodeBlue  CodeBlue[]
   CodeAir   CodeAir[]
+  CodeRed   CodeRed[]
 }

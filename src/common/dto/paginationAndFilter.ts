@@ -13,10 +13,10 @@ export class PaginationAndFilterDto {
   @IsPositive()
   @IsOptional()
   @Type(() => Number)
-  limit?: number = 5;
+  limit?: number;
 
   @IsPositive()
   @IsOptional()
   @Type(() => Number)
-  page?: number = 1;
+  page?: number;
 }
