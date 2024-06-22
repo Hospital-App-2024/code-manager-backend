@@ -23,6 +23,10 @@ export class CodeGreenController {
     const pdfDoc = await this.codeGreenService.generatePdf();
 
     response.setHeader('Content-Type', 'application/pdf');
+    response.setHeader(
+      'Content-Disposition',
+      'attachment; filename="codigo_verde.pdf"',
+    );
     pdfDoc.info.Title = 'Código Verde';
     pdfDoc.pipe(response);
     pdfDoc.end();
