@@ -1,5 +1,5 @@
 import { Operator } from '@prisma/client';
-import { formatDateTime } from 'src/common/helper/formatDateTime';
+import { formatDateTime, formatTime } from 'src/common/helper/formatDateTime';
 import { ICodeRed } from 'src/interfaces/code-red.interface';
 
 export class CodeRedEntity {
@@ -29,8 +29,9 @@ export class CodeRedEntity {
       COGRID: codeRed.COGRID ? 'Si' : 'No',
       createdAt: formatDateTime(codeRed.createdAt),
       operator: codeRed.operator.name,
-      firefighterCalledTime:
-        formatDateTime(codeRed.firefighterCalledTime) || 'N/A',
+      firefighterCalledTime: codeRed.firefighterCalledTime
+        ? formatTime(codeRed.firefighterCalledTime)
+        : 'N/A',
     };
   }
 

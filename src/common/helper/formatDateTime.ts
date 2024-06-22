@@ -6,3 +6,9 @@ export const formatDateTime = (date: Date) => {
     time: 'short',
   });
 };
+
+export const formatTime = (date: Date) => {
+  return format(date, {
+    time: 'short',
+  });
+};
