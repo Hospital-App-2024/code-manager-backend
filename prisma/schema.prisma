@@ -45,20 +45,20 @@ model CodeGreen {
 }
 
 model CodeAir {
-  id               String   @id @default(cuid())
-  activeBy         String
-  createdAt        DateTime
-  emergencyDetails String
-  location         String
-  operator         Operator @relation(fields: [operatorId], references: [id])
-  operatorId       String
+  id              String   @id @default(cuid())
+  activeBy        String
+  createdAt       DateTime
+  emergencyDetail String
+  location        String
+  operator        Operator @relation(fields: [operatorId], references: [id])
+  operatorId      String
 }
 
 model CodeRed {
-  id                    String   @id @default(cuid())
+  id                    String    @id @default(cuid())
   createdAt             DateTime
   activeBy              String
-  operator              Operator @relation(fields: [operatorId], references: [id])
+  operator              Operator  @relation(fields: [operatorId], references: [id])
   operatorId            String
   location              String
   COGRID                Boolean
