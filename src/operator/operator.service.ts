@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateOperatorDto } from './dto/create-operator.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 
@@ -19,10 +19,16 @@ export class OperatorService {
   }
 
   public async findOne(id: string) {
-    return await this.prismaService.operator.findUnique({
+    const operator = await this.prismaService.operator.findUnique({
       where: {
         id: id,
       },
     });
+
+    if (!operator) {
+      throw new NotFoundException(`Operador com id ${id} no encontrado`);
+    }
+
+    return operator;
   }
 }

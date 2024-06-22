@@ -7,8 +7,9 @@ import { CodeBlueModule } from './code-blue/code-blue.module';
 import { PrinterModule } from './printer/printer.module';
 import { CodeAirModule } from './code-air/code-air.module';
 import { CodeRedModule } from './code-red/code-red.module';
+import { CodeLeakModule } from './code-leak/code-leak.module';
 
 @Module({
-  imports: [AuthModule, PrismaModule, CodeGreenModule, OperatorModule, CodeBlueModule, PrinterModule, CodeAirModule, CodeRedModule],
+  imports: [AuthModule, PrismaModule, CodeGreenModule, OperatorModule, CodeBlueModule, PrinterModule, CodeAirModule, CodeRedModule, CodeLeakModule],
 })
 export class AppModule {}

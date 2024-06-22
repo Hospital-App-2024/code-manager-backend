@@ -65,6 +65,16 @@ model CodeRed {
   firefighterCalledTime DateTime?
 }
 
+model CodeLeak {
+  id                 String   @id @default(cuid())
+  activeBy           String
+  createdAt          DateTime
+  location           String
+  operator           Operator @relation(fields: [operatorId], references: [id])
+  operatorId         String
+  patientDescription String
+}
+
 model Operator {
   id        String      @id @default(cuid())
   name      String
@@ -72,4 +82,5 @@ model Operator {
   CodeBlue  CodeBlue[]
   CodeAir   CodeAir[]
   CodeRed   CodeRed[]
+  CodeLeak  CodeLeak[]
 }
