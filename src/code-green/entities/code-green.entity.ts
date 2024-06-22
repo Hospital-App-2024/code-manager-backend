@@ -1,23 +1,25 @@
-import { format } from '@formkit/tempo';
+import { Operator } from '@prisma/client';
+import { formatDateTime } from 'src/common/helper/formatDateTime';
+import { ICodeGreen } from 'src/interfaces/code-green.interface';
 
 export class CodeGreenEntity {
   public constructor(
-    public id: string,
     public activeBy: string,
-    public createdAt: string | Date,
-    public location: string,
+    public createdAt: Date,
     public event: string,
-    public operator: string,
-    public police: string | boolean,
+    public id: string,
+    public location: string,
+    public operator: Operator,
+    public police: boolean,
   ) {}
 
-  public static fromObject(dto: CodeGreenEntity): CodeGreenEntity {
+  public static fromObject(dto: CodeGreenEntity): ICodeGreen {
     const codeGreen = new CodeGreenEntity(
-      dto.id,
       dto.activeBy,
       dto.createdAt,
-      dto.location,
       dto.event,
+      dto.id,
+      dto.location,
       dto.operator,
       dto.police,
     );
@@ -25,10 +27,12 @@ export class CodeGreenEntity {
     return {
       ...codeGreen,
       police: codeGreen.police ? 'Si' : 'No',
-      createdAt: format(new Date(codeGreen.createdAt), {
-        date: 'short',
-        time: 'short',
-      }),
+      operator: codeGreen.operator.name,
+      createdAt: formatDateTime(codeGreen.createdAt),
     };
+  }
+
+  public static mapFromArray(dtos: CodeGreenEntity[]): ICodeGreen[] {
+    return dtos.map((dto) => CodeGreenEntity.fromObject(dto));
   }
 }

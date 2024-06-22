@@ -94,12 +94,4 @@ export class CodeBlueService {
 
     return doc;
   }
-
-  findOne(id: number) {
-    return `This action returns a #${id} codeBlue`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} codeBlue`;
-  }
 }

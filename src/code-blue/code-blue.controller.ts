@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Query, Res } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { CodeBlueService } from './code-blue.service';
 import { CreateCodeBlueDto } from './dto/create-code-blue.dto';
@@ -26,10 +26,5 @@ export class CodeBlueController {
     pdfDoc.info.Title = 'Código Azul';
     pdfDoc.pipe(response);
     pdfDoc.end();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.codeBlueService.findOne(+id);
   }
 }

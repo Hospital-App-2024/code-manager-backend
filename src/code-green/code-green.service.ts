@@ -3,9 +3,10 @@ import { CreateCodeGreenDto } from './dto/create-code-green.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CodeGreenEntity } from './entities/code-green.entity';
 import { PrinterService } from 'src/printer/printer.service';
-import { CodeGreenReport } from 'src/pdfTemplates/codeGreen.report';
 import { PaginationAndFilterDto } from 'src/common/dto/paginationAndFilter';
 import { OperatorService } from 'src/operator/operator.service';
+import { createPagination } from 'src/common/helper/createPagination';
+import { CodeReport } from 'src/pdfTemplates/code.report';
 
 @Injectable()
 export class CodeGreenService {
@@ -27,37 +28,20 @@ export class CodeGreenService {
     const codeGreen = await this.prismaService.codeGreen.create({
       data: createCodeGreenDto,
       include: {
-        operator: {
-          select: {
-            name: true,
-          },
-        },
+        operator: true,
       },
     });
 
-    return CodeGreenEntity.fromObject({
-      ...codeGreen,
-      operator: codeGreen.operator.name,
-    });
+    return CodeGreenEntity.fromObject(codeGreen);
   }
 
   public async findAll(paginationAndFilterDto: PaginationAndFilterDto) {
     const totalPages = await this.prismaService.codeGreen.count();
-
-    const currentPage = paginationAndFilterDto.page;
-    const perPage = paginationAndFilterDto.limit;
-
     const codeGreens = await this.prismaService.codeGreen.findMany({
-      skip: (currentPage - 1) * perPage,
-      take: perPage,
+      take: paginationAndFilterDto?.limit,
+      skip: paginationAndFilterDto?.limit * (paginationAndFilterDto.page - 1),
       orderBy: {
         createdAt: 'desc',
-      },
-      where: {
-        createdAt: {
-          gte: paginationAndFilterDto.from,
-          lte: paginationAndFilterDto.to,
-        },
       },
       include: {
         operator: true,
@@ -65,40 +49,44 @@ export class CodeGreenService {
     });
 
     return {
-      data: codeGreens.map((codeGreen) =>
-        CodeGreenEntity.fromObject({
-          ...codeGreen,
-          operator: codeGreen.operator.name,
-        }),
-      ),
-      meta: {
-        total: totalPages,
-        page: currentPage,
-        lastPage: Math.ceil(totalPages / perPage),
-        nextPage:
-          currentPage + 1 <= Math.ceil(totalPages / perPage)
-            ? currentPage + 1
-            : null,
-        prevPage: currentPage - 1 > 0 ? currentPage - 1 : null,
-      },
+      data: CodeGreenEntity.mapFromArray(codeGreens),
+      meta: createPagination({
+        page: paginationAndFilterDto.page,
+        take: paginationAndFilterDto.limit,
+        count: totalPages,
+      }),
     };
   }
 
   public async generatePdf() {
-    const codeGreens = await this.prismaService.codeGreen.findMany({
+    const data = await this.prismaService.codeGreen.findMany({
       include: {
         operator: true,
       },
     });
 
+    const codeGreens = CodeGreenEntity.mapFromArray(data);
+
     const doc = this.printerService.createPdf({
-      docDefinitions: CodeGreenReport({
-        greenCodes: codeGreens.map((codeGreen) =>
-          CodeGreenEntity.fromObject({
-            ...codeGreen,
-            operator: codeGreen.operator.name,
-          }),
-        ),
+      docDefinitions: CodeReport({
+        title: 'Reporte de Código Verde',
+        widths: ['*', 'auto', 150, '*', '*', '*'],
+        columnNames: [
+          'Fecha/Hora',
+          'Carabinero',
+          'Evento',
+          'Ubicación',
+          'Activo por',
+          'Operador',
+        ],
+        columnItems: codeGreens.map((codeGreen) => [
+          codeGreen.createdAt,
+          codeGreen.police,
+          codeGreen.event,
+          codeGreen.location,
+          codeGreen.activeBy,
+          codeGreen.operator,
+        ]),
       }),
     });
 
