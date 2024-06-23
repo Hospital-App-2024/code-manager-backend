@@ -1,5 +1,6 @@
 import { Role } from '@prisma/client';
 import { formatDateTime } from 'src/common/helper/formatDateTime';
+import { IUser } from 'src/interfaces/user.interface';
 
 export class UserEntity {
   public constructor(
@@ -13,9 +14,7 @@ export class UserEntity {
     public updatedAt: Date,
   ) {}
 
-  public static fromObject(dto: UserEntity) {
-    console.log(dto);
-
+  public static fromObject(dto: UserEntity): IUser {
     const user = new UserEntity(
       dto.createdAt,
       dto.email,
@@ -35,7 +34,7 @@ export class UserEntity {
     };
   }
 
-  public static mapFromArray(dtos: UserEntity[]) {
+  public static mapFromArray(dtos: UserEntity[]): IUser[] {
     return dtos.map((dto) => UserEntity.fromObject(dto));
   }
 }

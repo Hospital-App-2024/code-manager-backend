@@ -59,12 +59,33 @@ export class UserService {
     return user;
   }
 
-  public findOne(id: string) {
-    return `This action returns a #${id} user`;
+  public async findOne(id: string) {
+    const user = await this.prismaService.user.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    return user;
   }
 
-  update(id: string, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  public async update(id: string, updateUserDto: UpdateUserDto) {
+    try {
+      const user = await this.prismaService.user.update({
+        where: {
+          id,
+        },
+        data: updateUserDto,
+      });
+
+      return UserEntity.fromObject(user);
+    } catch (error) {
+      throw new BadRequestException('Error updating user');
+    }
   }
 
   remove(id: string) {
