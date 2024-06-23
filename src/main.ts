@@ -16,6 +16,13 @@ async function bootstrap() {
     }),
   );
 
+  app.use((req, res, next) => {
+    res.on('finish', () => {
+      logger.log(`${req.method} ${req.originalUrl} ${res.statusCode}`, 'HTTP');
+    });
+    next();
+  })
+
   await app.listen(envs.port, '0.0.0.0');
   logger.log(`Server running on ${await app.getUrl()}`);
 }
