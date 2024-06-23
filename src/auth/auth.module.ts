@@ -1,11 +1,11 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { envs } from 'src/config/envs';
 import { JwtStrategy } from './strategies/jwt.strategy';
-
+@Global()
 @Module({
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],
@@ -14,7 +14,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     JwtModule.register({
       global: true,
       secret: envs.jwtSecret,
-      signOptions: { expiresIn: '1d' },
+      signOptions: { expiresIn: envs.jwtTokenExpiration },
     }),
   ],
   exports: [JwtStrategy, PassportModule, JwtModule],

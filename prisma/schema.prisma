@@ -21,6 +21,7 @@ model User {
 enum Role {
   User
   Admin
+  Operator
 }
 
 model CodeBlue {

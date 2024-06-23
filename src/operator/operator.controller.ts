@@ -1,6 +1,8 @@
 import { Controller, Get, Post, Body } from '@nestjs/common';
 import { OperatorService } from './operator.service';
 import { CreateOperatorDto } from './dto/create-operator.dto';
+import { Auth } from 'src/auth/decorators/auth.decorator';
+import { operatorAccess } from 'src/common/helper/auth.roles';
 
 @Controller('operator')
 export class OperatorController {
@@ -12,6 +14,7 @@ export class OperatorController {
   }
 
   @Get()
+  @Auth(...operatorAccess)
   findAll() {
     return this.operatorService.findAll();
   }
