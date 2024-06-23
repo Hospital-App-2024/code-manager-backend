@@ -11,6 +11,9 @@ RUN npm install
 # Builder
 FROM node:22-alpine3.19 as build
 
+ARG DATABASE_URL
+ENV DATABASE_URL=$DATABASE_URL
+
 WORKDIR /usr/src/app
 
 # Copiar los modulos de node
@@ -20,6 +23,7 @@ COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY . .
 
 # Generar los archivos de prisma
+RUN npx prisma migrate deploy
 RUN npx prisma generate
 
 RUN npm run build
