@@ -23,7 +23,6 @@ export class CodeBlueController {
   }
 
   @Get('report')
-  @Auth(...basicAccess)
   public async generateReport(@Res() response: Response) {
     const pdfDoc = await this.codeBlueService.generatePdf();
 

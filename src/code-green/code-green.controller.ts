@@ -23,7 +23,6 @@ export class CodeGreenController {
   }
 
   @Get('report')
-  @Auth(...basicAccess)
   public async generateReport(@Res() response: Response) {
     const pdfDoc = await this.codeGreenService.generatePdf();
 
