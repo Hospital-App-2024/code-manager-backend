@@ -20,4 +20,9 @@ export class CodeAirController {
   findAll(@Query() paginationAndFilterDto: PaginationAndFilterDto) {
     return this.codeAirService.findAll(paginationAndFilterDto);
   }
+
+  @Get('total-by-month')
+  findAllMonthlyTotals() {
+    return this.codeAirService.findMonthly();
+  }
 }

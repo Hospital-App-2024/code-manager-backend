@@ -22,6 +22,12 @@ export class CodeBlueController {
     return this.codeBlueService.findAll(paginationAndFilterDto);
   }
 
+  @Get('total-by-month')
+  @Auth(...basicAccess)
+  findAllMonthlyTotals() {
+    return this.codeBlueService.findMonthly();
+  }
+
   @Get('report')
   public async generateReport(@Res() response: Response) {
     const pdfDoc = await this.codeBlueService.generatePdf();

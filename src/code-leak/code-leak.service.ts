@@ -5,6 +5,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { OperatorService } from 'src/operator/operator.service';
 import { CodeLeakEntity } from './entities/code-leak.entity';
 import { createPagination } from 'src/common/helper/createPagination';
+import { statisticMonths } from 'src/common/helper/statisticMonths';
 
 @Injectable()
 export class CodeLeakService {
@@ -46,5 +47,23 @@ export class CodeLeakService {
         count: codeLeak.length,
       }),
     };
+  }
+
+  public async findMonthly() {
+    const data = await this.prismaService.codeLeak.groupBy({
+      where: {
+        createdAt: {
+          gte: new Date(new Date().getFullYear(), 0, 1),
+          lte: new Date(new Date().getFullYear(), 11, 31),
+        },
+      },
+      by: ['createdAt'],
+      _count: true,
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    return statisticMonths(data);
   }
 }

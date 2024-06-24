@@ -5,6 +5,7 @@ import { OperatorService } from 'src/operator/operator.service';
 import { CodeAirEntity } from './entities/code-air.entity';
 import { PaginationAndFilterDto } from 'src/common/dto/paginationAndFilter';
 import { createPagination } from 'src/common/helper/createPagination';
+import { statisticMonths } from 'src/common/helper/statisticMonths';
 
 @Injectable()
 export class CodeAirService {
@@ -54,5 +55,23 @@ export class CodeAirService {
         count: countCodeAir,
       }),
     };
+  }
+
+  public async findMonthly() {
+    const data = await this.prismaService.codeAir.groupBy({
+      where: {
+        createdAt: {
+          gte: new Date(new Date().getFullYear(), 0, 1),
+          lte: new Date(new Date().getFullYear(), 11, 31),
+        },
+      },
+      by: ['createdAt'],
+      _count: true,
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    return statisticMonths(data);
   }
 }

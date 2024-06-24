@@ -20,4 +20,10 @@ export class CodeLeakController {
   findAll(@Query() paginationAndFilterDto: PaginationAndFilterDto) {
     return this.codeLeakService.findAll(paginationAndFilterDto);
   }
+
+  @Get('total-by-month')
+  @Auth(...basicAccess)
+  findAllMonthlyTotals() {
+    return this.codeLeakService.findMonthly();
+  }
 }

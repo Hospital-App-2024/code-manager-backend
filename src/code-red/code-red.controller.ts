@@ -20,4 +20,10 @@ export class CodeRedController {
   findAll(@Query() paginationAndFilterDto: PaginationAndFilterDto) {
     return this.codeRedService.findAll(paginationAndFilterDto);
   }
+
+  @Get('total-by-month')
+  @Auth(...basicAccess)
+  findAllMonthlyTotals() {
+    return this.codeRedService.findMonthly();
+  }
 }

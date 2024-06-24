@@ -5,6 +5,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { createPagination } from 'src/common/helper/createPagination';
 import { CodeRedEntity } from './entities/code-red.entity';
 import { OperatorService } from 'src/operator/operator.service';
+import { statisticMonths } from 'src/common/helper/statisticMonths';
 
 @Injectable()
 export class CodeRedService {
@@ -53,5 +54,23 @@ export class CodeRedService {
         count: countCodeRed,
       }),
     };
+  }
+
+  public async findMonthly() {
+    const data = await this.prismaService.codeRed.groupBy({
+      where: {
+        createdAt: {
+          gte: new Date(new Date().getFullYear(), 0, 1),
+          lte: new Date(new Date().getFullYear(), 11, 31),
+        },
+      },
+      by: ['createdAt'],
+      _count: true,
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    return statisticMonths(data);
   }
 }

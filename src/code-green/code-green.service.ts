@@ -7,6 +7,7 @@ import { PaginationAndFilterDto } from 'src/common/dto/paginationAndFilter';
 import { OperatorService } from 'src/operator/operator.service';
 import { createPagination } from 'src/common/helper/createPagination';
 import { CodeReport } from 'src/pdfTemplates/code.report';
+import { statisticMonths } from 'src/common/helper/statisticMonths';
 
 @Injectable()
 export class CodeGreenService {
@@ -56,6 +57,24 @@ export class CodeGreenService {
         count: totalPages,
       }),
     };
+  }
+
+  public async findMonthly() {
+    const data = await this.prismaService.codeGreen.groupBy({
+      where: {
+        createdAt: {
+          gte: new Date(new Date().getFullYear(), 0, 1),
+          lte: new Date(new Date().getFullYear(), 11, 31),
+        },
+      },
+      by: ['createdAt'],
+      _count: true,
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    return statisticMonths(data);
   }
 
   public async generatePdf() {

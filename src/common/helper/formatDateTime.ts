@@ -12,3 +12,7 @@ export const formatTime = (date: Date) => {
     time: 'short',
   });
 };
+
+export const formatMonth = (date: Date) => {
+  return format(date, 'M');
+};

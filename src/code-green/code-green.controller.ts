@@ -22,6 +22,12 @@ export class CodeGreenController {
     return this.codeGreenService.findAll(paginationAndFilterDto);
   }
 
+  @Get('total-by-month')
+  @Auth(...basicAccess)
+  findAllMonthlyTotals() {
+    return this.codeGreenService.findMonthly();
+  }
+
   @Get('report')
   public async generateReport(@Res() response: Response) {
     const pdfDoc = await this.codeGreenService.generatePdf();
