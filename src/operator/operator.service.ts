@@ -38,7 +38,7 @@ export class OperatorService {
     });
 
     return {
-      date: operators,
+      data: operators,
       meta: createPagination({
         page: page,
         take: limit,

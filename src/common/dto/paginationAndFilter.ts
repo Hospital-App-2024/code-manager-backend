@@ -11,12 +11,12 @@ export class PaginationAndFilterDto {
   to?: Date;
 
   @IsPositive()
-  @Type(() => Number)
   @IsOptional()
-  limit?: number;
+  @Type(() => Number)
+  limit?: number = 5;
 
   @IsPositive()
-  @Type(() => Number)
   @IsOptional()
-  page?: number;
+  @Type(() => Number)
+  page?: number = 1;
 }
