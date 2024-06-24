@@ -2,21 +2,21 @@ import { Type } from 'class-transformer';
 import { IsOptional, IsPositive } from 'class-validator';
 
 export class PaginationAndFilterDto {
-  @IsOptional()
   @Type(() => Date)
+  @IsOptional()
   from?: Date;
 
-  @IsOptional()
   @Type(() => Date)
+  @IsOptional()
   to?: Date;
 
   @IsPositive()
-  @IsOptional()
   @Type(() => Number)
+  @IsOptional()
   limit?: number;
 
   @IsPositive()
-  @IsOptional()
   @Type(() => Number)
+  @IsOptional()
   page?: number;
 }

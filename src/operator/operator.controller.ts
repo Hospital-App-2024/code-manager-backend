@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query } from '@nestjs/common';
 import { OperatorService } from './operator.service';
 import { CreateOperatorDto } from './dto/create-operator.dto';
 import { Auth } from 'src/auth/decorators/auth.decorator';
 import { adminAccess, operatorAccess } from 'src/common/helper/auth.roles';
+import { PaginationAndFilterDto } from 'src/common/dto/paginationAndFilter';
 
 @Controller('operator')
 export class OperatorController {
@@ -18,5 +19,13 @@ export class OperatorController {
   @Auth(...operatorAccess)
   findAll() {
     return this.operatorService.findAll();
+  }
+
+  @Get('pagination')
+  // @Auth(...operatorAccess)
+  findAllWithPagination(
+    @Query() paginationAndFilterDto: PaginationAndFilterDto,
+  ) {
+    return this.operatorService.findAllWithPagination(paginationAndFilterDto);
   }
 }
