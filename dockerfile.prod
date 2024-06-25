@@ -42,6 +42,7 @@ COPY --from=build /usr/src/app/node_modules ./node_modules
 # Copiar la carpeta de distribucion
 COPY --from=build /usr/src/app/dist ./dist
 COPY --from=build /usr/src/app/prisma ./prisma
+COPY --from=build /usr/src/app/fonts ./fonts
 
 ENV NODE_ENV=production
 
