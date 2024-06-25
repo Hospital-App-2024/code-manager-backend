@@ -1,10 +1,7 @@
 import { format } from '@formkit/tempo';
 
 export const formatDateTime = (date: Date) => {
-  return format(date, {
-    date: 'short',
-    time: 'short',
-  });
+  return format(date, 'DD/MM/YYYY, h:mm A');
 };
 
 export const formatTime = (date: Date) => {
