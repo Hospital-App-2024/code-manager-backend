@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { CodeRedService } from './code-red.service';
 import { CreateCodeRedDto } from './dto/create-code-red.dto';
 import { PaginationAndFilterDto } from 'src/common/dto/paginationAndFilter';
@@ -19,6 +20,16 @@ export class CodeRedController {
   @Auth(...basicAccess)
   findAll(@Query() paginationAndFilterDto: PaginationAndFilterDto) {
     return this.codeRedService.findAll(paginationAndFilterDto);
+  }
+
+  @Get('report')
+  public async generateReport(@Res() response: Response) {
+    const pdfDoc = await this.codeRedService.generatePdf();
+
+    response.setHeader('Content-Type', 'application/pdf');
+    pdfDoc.info.Title = 'Código Azul';
+    pdfDoc.pipe(response);
+    pdfDoc.end();
   }
 
   @Get('total-by-month')

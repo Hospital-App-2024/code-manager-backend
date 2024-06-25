@@ -6,10 +6,13 @@ import { createPagination } from 'src/common/helper/createPagination';
 import { CodeRedEntity } from './entities/code-red.entity';
 import { OperatorService } from 'src/operator/operator.service';
 import { statisticMonths } from 'src/common/helper/statisticMonths';
+import { PrinterService } from 'src/printer/printer.service';
+import { CodeReport } from 'src/pdfTemplates/code.report';
 
 @Injectable()
 export class CodeRedService {
   public constructor(
+    private readonly printerService: PrinterService,
     private readonly prismaService: PrismaService,
     private readonly operatorService: OperatorService,
   ) {}
@@ -72,5 +75,43 @@ export class CodeRedService {
     });
 
     return statisticMonths(data);
+  }
+
+  public async generatePdf() {
+    const data = await this.prismaService.codeRed.findMany({
+      orderBy: {
+        createdAt: 'desc',
+      },
+      include: {
+        operator: true,
+      },
+    });
+
+    const codeRed = CodeRedEntity.mapFromArray(data);
+
+    const doc = this.printerService.createPdf({
+      docDefinitions: CodeReport({
+        title: 'Reporte de Código Rojo',
+        columnNames: [
+          'Fecha/Hora',
+          'Comunicación con COGRID',
+          'Hora de llamada a bomberos',
+          'Ubicación',
+          'Activo por',
+          'Operador',
+        ],
+        columnItems: codeRed.map((item) => [
+          item.createdAt,
+          item.COGRID,
+          item.firefighterCalledTime,
+          item.location,
+          item.activeBy,
+          item.operator,
+        ]),
+        widths: ['*', 'auto', '*', '*', '*', '*'],
+      }),
+    });
+
+    return doc;
   }
 }

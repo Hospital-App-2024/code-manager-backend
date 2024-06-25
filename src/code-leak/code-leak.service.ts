@@ -6,10 +6,13 @@ import { OperatorService } from 'src/operator/operator.service';
 import { CodeLeakEntity } from './entities/code-leak.entity';
 import { createPagination } from 'src/common/helper/createPagination';
 import { statisticMonths } from 'src/common/helper/statisticMonths';
+import { PrinterService } from 'src/printer/printer.service';
+import { CodeReport } from 'src/pdfTemplates/code.report';
 
 @Injectable()
 export class CodeLeakService {
   public constructor(
+    private readonly printerService: PrinterService,
     private readonly prismaService: PrismaService,
     private readonly operatorService: OperatorService,
   ) {}
@@ -47,6 +50,42 @@ export class CodeLeakService {
         count: codeLeak.length,
       }),
     };
+  }
+
+  public async generatePdf() {
+    const data = await this.prismaService.codeLeak.findMany({
+      orderBy: {
+        createdAt: 'desc',
+      },
+      include: {
+        operator: true,
+      },
+    });
+
+    const codeLeak = CodeLeakEntity.mapFromArray(data);
+
+    const doc = this.printerService.createPdf({
+      docDefinitions: CodeReport({
+        title: 'Reporte de Código de Fuga',
+        columnNames: [
+          'Fecha/Hora',
+          'Descripción del paciente',
+          'Ubicación',
+          'Activo por',
+          'Operador',
+        ],
+        columnItems: codeLeak.map((item) => [
+          item.createdAt,
+          item.patientDescription,
+          item.location,
+          item.activeBy,
+          item.operator,
+        ]),
+        widths: ['*', 200, '*', '*', '*'],
+      }),
+    });
+
+    return doc;
   }
 
   public async findMonthly() {

@@ -89,22 +89,22 @@ export class CodeGreenService {
     const doc = this.printerService.createPdf({
       docDefinitions: CodeReport({
         title: 'Reporte de Código Verde',
-        widths: ['*', 'auto', 150, '*', '*', '*'],
+        widths: ['*', '*', '*', 'auto', 150, '*'],
         columnNames: [
-          'Fecha/Hora',
-          'Carabinero',
-          'Evento',
-          'Ubicación',
-          'Activo por',
+          'Fecha/hora',
           'Operador',
+          'Activo por',
+          'Carabineros',
+          'Ubicación',
+          'Evento',
         ],
         columnItems: codeGreens.map((codeGreen) => [
           codeGreen.createdAt,
-          codeGreen.police,
-          codeGreen.event,
-          codeGreen.location,
-          codeGreen.activeBy,
           codeGreen.operator,
+          codeGreen.activeBy,
+          codeGreen.police,
+          codeGreen.location,
+          codeGreen.event,
         ]),
       }),
     });

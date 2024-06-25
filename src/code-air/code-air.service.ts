@@ -6,10 +6,13 @@ import { CodeAirEntity } from './entities/code-air.entity';
 import { PaginationAndFilterDto } from 'src/common/dto/paginationAndFilter';
 import { createPagination } from 'src/common/helper/createPagination';
 import { statisticMonths } from 'src/common/helper/statisticMonths';
+import { PrinterService } from 'src/printer/printer.service';
+import { CodeReport } from 'src/pdfTemplates/code.report';
 
 @Injectable()
 export class CodeAirService {
   public constructor(
+    private readonly printerService: PrinterService,
     private readonly prismaService: PrismaService,
     private readonly operatorService: OperatorService,
   ) {}
@@ -55,6 +58,42 @@ export class CodeAirService {
         count: countCodeAir,
       }),
     };
+  }
+
+  public async generatePdf() {
+    const data = await this.prismaService.codeAir.findMany({
+      orderBy: {
+        createdAt: 'desc',
+      },
+      include: {
+        operator: true,
+      },
+    });
+
+    const codeRed = CodeAirEntity.mapFromArray(data);
+
+    const doc = this.printerService.createPdf({
+      docDefinitions: CodeReport({
+        title: 'Reporte de Código Aéreo',
+        columnNames: [
+          'Fecha/Hora',
+          'Lugar de la emergencia',
+          'Detalle de la emergencia',
+          'Activo por',
+          'Operador',
+        ],
+        columnItems: codeRed.map((item) => [
+          item.createdAt,
+          item.location,
+          item.emergencyDetail,
+          item.activeBy,
+          item.operator,
+        ]),
+        widths: ['*', 200, 200, '*', '*'],
+      }),
+    });
+
+    return doc;
   }
 
   public async findMonthly() {

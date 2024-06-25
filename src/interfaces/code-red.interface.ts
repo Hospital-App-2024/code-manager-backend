@@ -4,5 +4,6 @@ export interface ICodeRed {
   activeBy: string;
   operator: string;
   COGRID: string;
+  location: string;
   firefighterCalledTime: string;
 }
