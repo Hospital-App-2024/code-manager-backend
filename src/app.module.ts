@@ -9,8 +9,9 @@ import { CodeAirModule } from './code-air/code-air.module';
 import { CodeRedModule } from './code-red/code-red.module';
 import { CodeLeakModule } from './code-leak/code-leak.module';
 import { UserModule } from './user/user.module';
+import { FireAlarmsModule } from './fire-alarms/fire-alarms.module';
 
 @Module({
-  imports: [AuthModule, PrismaModule, CodeGreenModule, OperatorModule, CodeBlueModule, PrinterModule, CodeAirModule, CodeRedModule, CodeLeakModule, UserModule],
+  imports: [AuthModule, PrismaModule, CodeGreenModule, OperatorModule, CodeBlueModule, PrinterModule, CodeAirModule, CodeRedModule, CodeLeakModule, UserModule, FireAlarmsModule],
 })
 export class AppModule {}

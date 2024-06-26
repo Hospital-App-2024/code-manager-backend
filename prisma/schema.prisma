@@ -85,3 +85,29 @@ model Operator {
   CodeRed   CodeRed[]
   CodeLeak  CodeLeak[]
 }
+
+model Nodo {
+  id       String   @id @default(uuid())
+  nodo     Int
+  building String
+  devices  Device[]
+}
+
+model Device {
+  id           String     @id @default(uuid())
+  lazo         String
+  location     String
+  device       String
+  nodo         Nodo       @relation(fields: [nodoId], references: [id])
+  nodoId       String
+  typeDevice   TypeDevice @relation(fields: [typeDeviceId], references: [id])
+  typeDeviceId String
+  operative    Boolean    @default(true)
+  observations String?
+}
+
+model TypeDevice {
+  id      String   @id @default(uuid())
+  type    String
+  devices Device[]
+}
