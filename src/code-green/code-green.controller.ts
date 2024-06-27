@@ -32,11 +32,11 @@ export class CodeGreenController {
   public async generateReport(@Res() response: Response) {
     const pdfDoc = await this.codeGreenService.generatePdf();
 
-    // response.setHeader('Content-Type', 'application/pdf');
-    response.setHeader(
-      'Content-Disposition',
-      'attachment; filename="codigo_verde.pdf"',
-    );
+    response.setHeader('Content-Type', 'application/pdf');
+    // response.setHeader(
+    //   'Content-Disposition',
+    //   'attachment; filename="codigo_verde.pdf"',
+    // );
     pdfDoc.info.Title = 'Código Verde';
     pdfDoc.pipe(response);
     pdfDoc.end();
