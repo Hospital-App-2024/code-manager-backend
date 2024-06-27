@@ -39,6 +39,15 @@ export class CodeGreenService {
   public async findAll(paginationAndFilterDto: PaginationAndFilterDto) {
     const totalPages = await this.prismaService.codeGreen.count();
     const codeGreens = await this.prismaService.codeGreen.findMany({
+      where: {
+        createdAt: {
+          gte:
+            paginationAndFilterDto?.from &&
+            new Date(paginationAndFilterDto?.from),
+          lte:
+            paginationAndFilterDto?.to && new Date(paginationAndFilterDto?.to),
+        },
+      },
       take: paginationAndFilterDto?.limit,
       skip: paginationAndFilterDto?.limit * (paginationAndFilterDto.page - 1),
       orderBy: {
