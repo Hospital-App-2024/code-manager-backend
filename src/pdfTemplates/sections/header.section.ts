@@ -23,7 +23,7 @@ const contentSubtitle = (subtitle: string): Content => {
     alignment: 'center',
     margin: [0, 2, 0, 0],
     style: {
-      fontSize: 16,
+      fontSize: 12,
       bold: true,
     },
   };

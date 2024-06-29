@@ -50,7 +50,9 @@ export class CodeGreenService {
         },
       },
       take: paginationAndFilterDto?.limit,
-      skip: paginationAndFilterDto?.limit * (paginationAndFilterDto.page - 1),
+      skip:
+        paginationAndFilterDto.limit &&
+        paginationAndFilterDto?.limit * (paginationAndFilterDto.page - 1),
       orderBy: {
         createdAt: 'desc',
       },
@@ -88,26 +90,12 @@ export class CodeGreenService {
   }
 
   public async generatePdf(paginationAndFilterDto: PaginationAndFilterDto) {
-    const data = await this.prismaService.codeGreen.findMany({
-      where: {
-        createdAt: {
-          gte:
-            paginationAndFilterDto?.from &&
-            new Date(paginationAndFilterDto?.from),
-          lte:
-            paginationAndFilterDto?.to && new Date(paginationAndFilterDto?.to),
-        },
-      },
-      include: {
-        operator: true,
-      },
-    });
-
-    const codeGreens = CodeGreenEntity.mapFromArray(data);
+    const { data: codeGreens } = await this.findAll(paginationAndFilterDto);
 
     const doc = this.printerService.createPdf({
       docDefinitions: CodeReport({
         title: 'Reporte de Código Verde',
+        subtitle: `Total de registros: ${codeGreens.length}`,
         widths: ['*', '*', 'auto', 150, 150, 'auto'],
         columnNames: [
           'Fecha/hora',
@@ -119,9 +107,9 @@ export class CodeGreenService {
         ],
         columnItems: codeGreens.map((codeGreen) => [
           `Activado: ${codeGreen.createdAt} 
-           Finalizado: ${codeGreen.closedAt}`,
+           Finalizado: ${codeGreen.closedAt ?? ''}`,
           `Activado: ${codeGreen.activeBy}
-           Finalizado: ${codeGreen.closedBy}
+           Finalizado: ${codeGreen.closedBy ?? ''}
            `,
           codeGreen.police,
           codeGreen.location,

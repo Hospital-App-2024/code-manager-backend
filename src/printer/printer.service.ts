@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import PdfPrinter from 'pdfmake';
-import { BufferOptions, TDocumentDefinitions } from 'pdfmake/interfaces';
+import {
+  BufferOptions,
+  CustomTableLayout,
+  TDocumentDefinitions,
+} from 'pdfmake/interfaces';
 
 const fonts = {
   Roboto: {
@@ -11,13 +15,50 @@ const fonts = {
   },
 };
 
+const customTableLayouts: Record<string, CustomTableLayout> = {
+  blueHeaders: {
+    hLineWidth: function (i, node) {
+      if (i === 0 || i === node.table.body.length) {
+        return 0;
+      }
+      return i === node.table.headerRows ? 2 : 1;
+    },
+    vLineWidth: function () {
+      return 0;
+    },
+    hLineColor: function (i) {
+      return i === 1 ? 'black' : '#aaa';
+    },
+    paddingLeft: function () {
+      return 4;
+    },
+    paddingRight: function () {
+      return 4;
+    },
+    paddingBottom: function () {
+      return 4;
+    },
+    paddingTop: function () {
+      return 4;
+    },
+    fillColor: function (i) {
+      if (i === 0) {
+        return '#2563EB';
+      }
+      return i % 2 ? null : '#f3f3f3';
+    },
+  },
+};
+
 @Injectable()
 export class PrinterService {
   private printer = new PdfPrinter(fonts);
 
   public createPdf({
     docDefinitions,
-    options,
+    options = {
+      tableLayouts: customTableLayouts,
+    },
   }: {
     docDefinitions: TDocumentDefinitions;
     options?: BufferOptions;
