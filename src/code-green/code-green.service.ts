@@ -9,6 +9,7 @@ import { createPagination } from 'src/common/helper/createPagination';
 import { CodeReport } from 'src/pdfTemplates/code.report';
 import { statisticMonths } from 'src/common/helper/statisticMonths';
 import { UpdateCodeGreenDto } from './dto/update-code-green.dto';
+import { tableBody } from 'src/pdfTemplates/sections/body.section';
 
 @Injectable()
 export class CodeGreenService {
@@ -96,21 +97,21 @@ export class CodeGreenService {
       docDefinitions: CodeReport({
         title: 'Reporte de Código Verde',
         subtitle: `Total de registros: ${codeGreens.length}`,
-        widths: ['*', '*', 'auto', 150, 150, 'auto'],
+        widths: ['auto', 'auto', '*', '*', 'auto'],
         columnNames: [
-          'Fecha/hora',
-          'Activo por',
+          'Activado/Desactivado',
           'Carabineros',
           'Ubicación',
           'Evento',
           'Operador',
         ],
         columnItems: codeGreens.map((codeGreen) => [
-          `Activado: ${codeGreen.createdAt} 
-           Finalizado: ${codeGreen.closedAt ?? ''}`,
-          `Activado: ${codeGreen.activeBy}
-           Finalizado: ${codeGreen.closedBy ?? ''}
-           `,
+          tableBody({
+            activeBy: codeGreen.activeBy,
+            createdAt: codeGreen.createdAt,
+            closedAt: codeGreen.closedAt,
+            closedBy: codeGreen.closedBy,
+          }),
           codeGreen.police,
           codeGreen.location,
           codeGreen.event,

@@ -23,6 +23,7 @@ export const CodeReport = ({
   widths = ['*', '*', '*', '*', '*'],
 }: ReportOptions): TDocumentDefinitions => {
   return {
+    pageSize: 'LEGAL',
     pageOrientation: 'landscape',
     header: (currenPage) => {
       if (currenPage === 1) {
