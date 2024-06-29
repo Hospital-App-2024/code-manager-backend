@@ -25,24 +25,29 @@ enum Role {
 }
 
 model CodeBlue {
-  id         String   @id @default(cuid())
-  activeBy   String
-  createdAt  DateTime
-  location   String
-  team       String
-  operator   Operator @relation(fields: [operatorId], references: [id])
-  operatorId String
+  id           String   @id @default(cuid())
+  activeBy     String
+  createdAt    DateTime
+  location     String
+  team         String
+  operator     Operator @relation(fields: [operatorId], references: [id])
+  operatorId   String
+  observations String?
 }
 
 model CodeGreen {
-  id         String   @id @default(cuid())
-  activeBy   String
-  createdAt  DateTime
-  location   String
-  event      String
-  operator   Operator @relation(fields: [operatorId], references: [id])
-  operatorId String
-  police     Boolean
+  id           String    @id @default(cuid())
+  activeBy     String
+  createdAt    DateTime
+  location     String
+  event        String
+  operator     Operator  @relation(fields: [operatorId], references: [id])
+  operatorId   String
+  police       Boolean
+  observations String?
+  isClosed     Boolean   @default(false)
+  closedBy     String?
+  closedAt     DateTime?
 }
 
 model CodeAir {
@@ -53,6 +58,7 @@ model CodeAir {
   location        String
   operator        Operator @relation(fields: [operatorId], references: [id])
   operatorId      String
+  observations    String?
 }
 
 model CodeRed {
@@ -64,6 +70,7 @@ model CodeRed {
   location              String
   COGRID                Boolean
   firefighterCalledTime DateTime?
+  observations          String?
 }
 
 model CodeLeak {
@@ -74,6 +81,7 @@ model CodeLeak {
   operator           Operator @relation(fields: [operatorId], references: [id])
   operatorId         String
   patientDescription String
+  observations       String?
 }
 
 model Operator {
@@ -88,7 +96,7 @@ model Operator {
 
 model Nodo {
   id       String   @id @default(uuid())
-  nodo     Int
+  nodo     String
   building String
   devices  Device[]
 }

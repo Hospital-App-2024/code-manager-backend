@@ -8,6 +8,7 @@ import { OperatorService } from 'src/operator/operator.service';
 import { createPagination } from 'src/common/helper/createPagination';
 import { CodeReport } from 'src/pdfTemplates/code.report';
 import { statisticMonths } from 'src/common/helper/statisticMonths';
+import { UpdateCodeGreenDto } from './dto/update-code-green.dto';
 
 @Injectable()
 export class CodeGreenService {
@@ -86,8 +87,17 @@ export class CodeGreenService {
     return statisticMonths(data);
   }
 
-  public async generatePdf() {
+  public async generatePdf(paginationAndFilterDto: PaginationAndFilterDto) {
     const data = await this.prismaService.codeGreen.findMany({
+      where: {
+        createdAt: {
+          gte:
+            paginationAndFilterDto?.from &&
+            new Date(paginationAndFilterDto?.from),
+          lte:
+            paginationAndFilterDto?.to && new Date(paginationAndFilterDto?.to),
+        },
+      },
       include: {
         operator: true,
       },
@@ -98,26 +108,69 @@ export class CodeGreenService {
     const doc = this.printerService.createPdf({
       docDefinitions: CodeReport({
         title: 'Reporte de Código Verde',
-        widths: ['*', '*', '*', 'auto', 150, '*'],
+        widths: ['*', '*', 'auto', 150, 150, 'auto'],
         columnNames: [
           'Fecha/hora',
-          'Operador',
           'Activo por',
           'Carabineros',
           'Ubicación',
           'Evento',
+          'Operador',
         ],
         columnItems: codeGreens.map((codeGreen) => [
-          codeGreen.createdAt,
-          codeGreen.operator,
-          codeGreen.activeBy,
+          `Activado: ${codeGreen.createdAt} 
+           Finalizado: ${codeGreen.closedAt}`,
+          `Activado: ${codeGreen.activeBy}
+           Finalizado: ${codeGreen.closedBy}
+           `,
           codeGreen.police,
           codeGreen.location,
           codeGreen.event,
+          codeGreen.operator,
         ]),
       }),
     });
 
     return doc;
+  }
+
+  public async findOne(id: string) {
+    const codeGreen = await this.prismaService.codeGreen.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        operator: true,
+      },
+    });
+
+    if (!codeGreen) {
+      throw new BadRequestException('Code Green not found');
+    }
+
+    return codeGreen;
+  }
+
+  public async update(id: string, updateCodeGreenDto: UpdateCodeGreenDto) {
+    const isClosed = await this.findOne(id);
+
+    if (isClosed.isClosed)
+      throw new BadRequestException('Code Green is already closed');
+
+    try {
+      const data = await this.prismaService.codeGreen.update({
+        where: {
+          id,
+        },
+        include: {
+          operator: true,
+        },
+        data: updateCodeGreenDto,
+      });
+
+      return CodeGreenEntity.fromObject(data);
+    } catch (error) {
+      throw new BadRequestException('Error updating user');
+    }
   }
 }

@@ -1,10 +1,20 @@
-import { Controller, Get, Post, Body, Query, Res } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  Res,
+  Patch,
+  Param,
+} from '@nestjs/common';
 import { CodeGreenService } from './code-green.service';
 import { CreateCodeGreenDto } from './dto/create-code-green.dto';
 import { Response } from 'express';
 import { PaginationAndFilterDto } from 'src/common/dto/paginationAndFilter';
 import { Auth } from 'src/auth/decorators/auth.decorator';
 import { basicAccess, operatorAccess } from 'src/common/helper/auth.roles';
+import { UpdateCodeGreenDto } from './dto/update-code-green.dto';
 
 @Controller('code-green')
 export class CodeGreenController {
@@ -29,16 +39,26 @@ export class CodeGreenController {
   }
 
   @Get('report')
-  public async generateReport(@Res() response: Response) {
-    const pdfDoc = await this.codeGreenService.generatePdf();
+  public async generateReport(
+    @Res() response: Response,
+    @Query() paginationAndFilterDto: PaginationAndFilterDto,
+  ) {
+    const pdfDoc = await this.codeGreenService.generatePdf(
+      paginationAndFilterDto,
+    );
 
     response.setHeader('Content-Type', 'application/pdf');
-    // response.setHeader(
-    //   'Content-Disposition',
-    //   'attachment; filename="codigo_verde.pdf"',
-    // );
     pdfDoc.info.Title = 'Código Verde';
     pdfDoc.pipe(response);
     pdfDoc.end();
+  }
+
+  @Patch(':id')
+  @Auth(...operatorAccess)
+  update(
+    @Param('id') id: string,
+    @Body() updateCodeGreenDto: UpdateCodeGreenDto,
+  ) {
+    return this.codeGreenService.update(id, updateCodeGreenDto);
   }
 }

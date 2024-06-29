@@ -11,6 +11,10 @@ export class CodeGreenEntity {
     public location: string,
     public operator: Operator,
     public police: boolean,
+    public isClosed: boolean,
+    public observations?: string,
+    public closedBy?: string,
+    public closedAt?: Date,
   ) {}
 
   public static fromObject(dto: CodeGreenEntity): ICodeGreen {
@@ -22,6 +26,10 @@ export class CodeGreenEntity {
       dto.location,
       dto.operator,
       dto.police,
+      dto.isClosed,
+      dto?.observations,
+      dto?.closedBy,
+      dto?.closedAt,
     );
 
     return {
@@ -29,6 +37,8 @@ export class CodeGreenEntity {
       police: codeGreen.police ? 'Si' : 'No',
       operator: codeGreen.operator.name,
       createdAt: formatDateTime(codeGreen.createdAt),
+      isClosed: codeGreen.isClosed ? 'Si' : 'No',
+      closedAt: codeGreen.closedAt ? formatDateTime(codeGreen.closedAt) : null,
     };
   }
 

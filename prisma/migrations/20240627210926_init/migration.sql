@@ -23,6 +23,7 @@ CREATE TABLE "CodeBlue" (
     "location" TEXT NOT NULL,
     "team" TEXT NOT NULL,
     "operatorId" TEXT NOT NULL,
+    "observations" TEXT,
 
     CONSTRAINT "CodeBlue_pkey" PRIMARY KEY ("id")
 );
@@ -36,6 +37,10 @@ CREATE TABLE "CodeGreen" (
     "event" TEXT NOT NULL,
     "operatorId" TEXT NOT NULL,
     "police" BOOLEAN NOT NULL,
+    "observations" TEXT,
+    "isClosed" BOOLEAN NOT NULL DEFAULT false,
+    "closedBy" TEXT,
+    "closedAt" TIMESTAMP(3),
 
     CONSTRAINT "CodeGreen_pkey" PRIMARY KEY ("id")
 );
@@ -48,6 +53,7 @@ CREATE TABLE "CodeAir" (
     "emergencyDetail" TEXT NOT NULL,
     "location" TEXT NOT NULL,
     "operatorId" TEXT NOT NULL,
+    "observations" TEXT,
 
     CONSTRAINT "CodeAir_pkey" PRIMARY KEY ("id")
 );
@@ -61,6 +67,7 @@ CREATE TABLE "CodeRed" (
     "location" TEXT NOT NULL,
     "COGRID" BOOLEAN NOT NULL,
     "firefighterCalledTime" TIMESTAMP(3),
+    "observations" TEXT,
 
     CONSTRAINT "CodeRed_pkey" PRIMARY KEY ("id")
 );
@@ -73,6 +80,7 @@ CREATE TABLE "CodeLeak" (
     "location" TEXT NOT NULL,
     "operatorId" TEXT NOT NULL,
     "patientDescription" TEXT NOT NULL,
+    "observations" TEXT,
 
     CONSTRAINT "CodeLeak_pkey" PRIMARY KEY ("id")
 );
@@ -83,6 +91,37 @@ CREATE TABLE "Operator" (
     "name" TEXT NOT NULL,
 
     CONSTRAINT "Operator_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Nodo" (
+    "id" TEXT NOT NULL,
+    "nodo" TEXT NOT NULL,
+    "building" TEXT NOT NULL,
+
+    CONSTRAINT "Nodo_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Device" (
+    "id" TEXT NOT NULL,
+    "lazo" TEXT NOT NULL,
+    "location" TEXT NOT NULL,
+    "device" TEXT NOT NULL,
+    "nodoId" TEXT NOT NULL,
+    "typeDeviceId" TEXT NOT NULL,
+    "operative" BOOLEAN NOT NULL DEFAULT true,
+    "observations" TEXT,
+
+    CONSTRAINT "Device_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TypeDevice" (
+    "id" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+
+    CONSTRAINT "TypeDevice_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -102,3 +141,9 @@ ALTER TABLE "CodeRed" ADD CONSTRAINT "CodeRed_operatorId_fkey" FOREIGN KEY ("ope
 
 -- AddForeignKey
 ALTER TABLE "CodeLeak" ADD CONSTRAINT "CodeLeak_operatorId_fkey" FOREIGN KEY ("operatorId") REFERENCES "Operator"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Device" ADD CONSTRAINT "Device_nodoId_fkey" FOREIGN KEY ("nodoId") REFERENCES "Nodo"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Device" ADD CONSTRAINT "Device_typeDeviceId_fkey" FOREIGN KEY ("typeDeviceId") REFERENCES "TypeDevice"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

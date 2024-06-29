@@ -6,4 +6,8 @@ export interface ICodeGreen {
   location: string;
   operator: string;
   police: string;
+  isClosed: string;
+  observations?: string;
+  closedBy?: string;
+  closedAt?: string;
 }

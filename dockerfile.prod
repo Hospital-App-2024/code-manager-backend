@@ -35,6 +35,10 @@ RUN npm ci -f --only=production && npm cache clean --force
 # Crear la imagen final
 FROM node:21-alpine3.19 as prod
 
+# Sona horaria chile
+RUN apk add --no-cache tzdata
+ENV TZ=America/Santiago
+
 WORKDIR /usr/src/app
 
 COPY --from=build /usr/src/app/node_modules ./node_modules
