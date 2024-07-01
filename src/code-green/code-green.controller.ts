@@ -53,6 +53,12 @@ export class CodeGreenController {
     pdfDoc.end();
   }
 
+  @Get(':id')
+  @Auth(...operatorAccess)
+  findOne(@Param('id') id: string) {
+    return this.codeGreenService.findOne(id);
+  }
+
   @Patch(':id')
   @Auth(...operatorAccess)
   update(
