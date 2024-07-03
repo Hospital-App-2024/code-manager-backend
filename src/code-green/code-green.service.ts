@@ -35,7 +35,7 @@ export class CodeGreenService {
       },
     });
 
-    return CodeGreenEntity.fromObject(codeGreen);
+    return CodeGreenEntity.fromObject({ codeGreen });
   }
 
   public async findAll(paginationAndFilterDto: PaginationAndFilterDto) {
@@ -63,7 +63,9 @@ export class CodeGreenService {
     });
 
     return {
-      data: CodeGreenEntity.mapFromArray(codeGreens),
+      data: CodeGreenEntity.mapFromArray(
+        codeGreens.map((codeGreen) => ({ codeGreen })),
+      ),
       meta: createPagination({
         page: paginationAndFilterDto.page,
         take: paginationAndFilterDto.limit,
@@ -157,7 +159,7 @@ export class CodeGreenService {
         data: updateCodeGreenDto,
       });
 
-      return CodeGreenEntity.fromObject(data);
+      return CodeGreenEntity.fromObject({ codeGreen: data });
     } catch (error) {
       throw new BadRequestException('Error updating user');
     }

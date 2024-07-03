@@ -26,12 +26,12 @@ export const CodeGreenReport = ({
           dontBreakRows: true,
           body: [
             ['Fecha/Hora', 'Operador', 'Activado por', 'Ubicación', 'Evento'],
-            ...greenCodes.map((greenCode) => [
-              greenCode.createdAt,
-              greenCode.operator,
-              greenCode.activeBy,
-              greenCode.location,
-              greenCode.event,
+            ...greenCodes.map(({ codeGreen }) => [
+              codeGreen.createdAt,
+              codeGreen.operator,
+              codeGreen.activeBy,
+              codeGreen.location,
+              codeGreen.event,
             ]),
           ],
         },

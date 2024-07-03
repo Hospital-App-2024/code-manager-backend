@@ -2,35 +2,25 @@ import { Operator } from '@prisma/client';
 import { formatDateTime } from 'src/common/helper/formatDateTime';
 import { ICodeGreen } from 'src/interfaces/code-green.interface';
 
+interface CodeGreenProps {
+  activeBy: string;
+  createdAt: Date;
+  event: string;
+  id: string;
+  isClosed: boolean;
+  location: string;
+  operator: Operator;
+  police: boolean;
+  closedAt?: Date;
+  closedBy?: string;
+  observations?: string;
+}
+
 export class CodeGreenEntity {
-  public constructor(
-    public activeBy: string,
-    public createdAt: Date,
-    public event: string,
-    public id: string,
-    public location: string,
-    public operator: Operator,
-    public police: boolean,
-    public isClosed: boolean,
-    public observations?: string,
-    public closedBy?: string,
-    public closedAt?: Date,
-  ) {}
+  public constructor(public codeGreen: CodeGreenProps) {}
 
   public static fromObject(dto: CodeGreenEntity): ICodeGreen {
-    const codeGreen = new CodeGreenEntity(
-      dto.activeBy,
-      dto.createdAt,
-      dto.event,
-      dto.id,
-      dto.location,
-      dto.operator,
-      dto.police,
-      dto.isClosed,
-      dto?.observations,
-      dto?.closedBy,
-      dto?.closedAt,
-    );
+    const { codeGreen } = new CodeGreenEntity(dto.codeGreen);
 
     return {
       ...codeGreen,
