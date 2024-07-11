@@ -8,51 +8,51 @@ export interface Data {
 const months = [
   {
     month: 'Enero',
-    value: 0,
-  },
-  {
-    month: 'Febrero',
     value: 1,
   },
   {
-    month: 'Marzo',
+    month: 'Febrero',
     value: 2,
   },
   {
-    month: 'Abril',
+    month: 'Marzo',
     value: 3,
   },
   {
-    month: 'Mayo',
+    month: 'Abril',
     value: 4,
   },
   {
-    month: 'Junio',
+    month: 'Mayo',
     value: 5,
   },
   {
-    month: 'Julio',
+    month: 'Junio',
     value: 6,
   },
   {
-    month: 'Agosto',
+    month: 'Julio',
     value: 7,
   },
   {
-    month: 'Septiembre',
+    month: 'Agosto',
     value: 8,
   },
   {
-    month: 'Octubre',
+    month: 'Septiembre',
     value: 9,
   },
   {
-    month: 'Noviembre',
+    month: 'Octubre',
     value: 10,
   },
   {
-    month: 'Diciembre',
+    month: 'Noviembre',
     value: 11,
+  },
+  {
+    month: 'Diciembre',
+    value: 12,
   },
 ];
 
