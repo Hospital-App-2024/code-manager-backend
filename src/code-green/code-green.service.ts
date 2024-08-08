@@ -9,7 +9,6 @@ import { createPagination } from 'src/common/helper/createPagination';
 import { CodeReport } from 'src/pdfTemplates/code.report';
 import { statisticMonths } from 'src/common/helper/statisticMonths';
 import { UpdateCodeGreenDto } from './dto/update-code-green.dto';
-import { tableBody } from 'src/pdfTemplates/sections/body.section';
 
 @Injectable()
 export class CodeGreenService {
@@ -98,22 +97,35 @@ export class CodeGreenService {
     const doc = this.printerService.createPdf({
       docDefinitions: CodeReport({
         title: 'Reporte de Código Verde',
-        subtitle: `Total de registros: ${codeGreens.length}`,
-        widths: ['auto', 'auto', '*', '*', 'auto'],
+        subtitle: `Total de registros: ${codeGreens.length}, Abiertos: ${codeGreens.filter((code) => !code.isClosed).length}, Cerrados: ${codeGreens.filter((code) => code.isClosed).length}`,
+        widths: [
+          'auto',
+          'auto',
+          'auto',
+          'auto',
+          'auto',
+          'auto',
+          '*',
+          '*',
+          'auto',
+        ],
         columnNames: [
-          'Activado/Desactivado',
+          'Focha',
+          'Hora de Activación',
+          'Hora de Finalización',
+          'Activado por',
+          'Desactivado por',
           'Carabineros',
           'Ubicación',
           'Evento',
           'Operador',
         ],
         columnItems: codeGreens.map((codeGreen) => [
-          tableBody({
-            activeBy: codeGreen.activeBy,
-            createdAt: codeGreen.createdAt,
-            closedAt: codeGreen.closedAt,
-            closedBy: codeGreen.closedBy,
-          }),
+          codeGreen.createdAt.split(',')[0],
+          codeGreen.createdAt.split(',')[1],
+          codeGreen?.closedAt?.split(',')[1] || '',
+          codeGreen.activeBy,
+          codeGreen.closedBy || '',
           codeGreen.police,
           codeGreen.location,
           codeGreen.event,

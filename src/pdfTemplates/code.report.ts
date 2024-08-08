@@ -36,7 +36,7 @@ export const CodeReport = ({
       {
         layout: 'blueHeaders',
         style: {
-          fontSize: 12,
+          fontSize: 10,
         },
         table: {
           headerRows: 1,
