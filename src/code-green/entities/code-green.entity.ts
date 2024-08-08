@@ -27,7 +27,6 @@ export class CodeGreenEntity {
       police: codeGreen.police ? 'Si' : 'No',
       operator: codeGreen.operator.name,
       createdAt: formatDateTime(codeGreen.createdAt),
-      isClosed: codeGreen.isClosed ? 'Si' : 'No',
       closedAt: codeGreen.closedAt ? formatDateTime(codeGreen.closedAt) : null,
     };
   }
