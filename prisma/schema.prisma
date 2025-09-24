@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  role      Role     @default(User)
+  isActive  Boolean  @default(false)
+}
+
+enum Role {
+  User
+  Admin
+  Operator
+}
+
+model CodeBlue {
+  id           String   @id @default(cuid())
+  activeBy     String
+  createdAt    DateTime
+  location     String
+  team         String
+  operator     Operator @relation(fields: [operatorId], references: [id])
+  operatorId   String
+  observations String?
+}
+
+model CodeGreen {
+  id           String    @id @default(cuid())
+  activeBy     String
+  createdAt    DateTime
+  location     String
+  event        String
+  operator     Operator  @relation(fields: [operatorId], references: [id])
+  operatorId   String
+  police       Boolean
+  observations String?
+  isClosed     Boolean   @default(false)
+  closedBy     String?
+  closedAt     DateTime?
+}
+
+model CodeAir {
+  id              String   @id @default(cuid())
+  activeBy        String
+  createdAt       DateTime
+  emergencyDetail String
+  location        String
+  operator        Operator @relation(fields: [operatorId], references: [id])
+  operatorId      String
+  observations    String?
+}
+
+model CodeRed {
+  id                    String    @id @default(cuid())
+  createdAt             DateTime
+  activeBy              String
+  operator              Operator  @relation(fields: [operatorId], references: [id])
+  operatorId            String
+  location              String
+  COGRID                Boolean
+  firefighterCalledTime DateTime?
+  observations          String?
+}
+
+model CodeLeak {
+  id                 String   @id @default(cuid())
+  activeBy           String
+  createdAt          DateTime
+  location           String
+  operator           Operator @relation(fields: [operatorId], references: [id])
+  operatorId         String
+  patientDescription String
+  observations       String?
+}
+
+model Operator {
+  id        String      @id @default(cuid())
+  name      String
+  CodeGreen CodeGreen[]
+  CodeBlue  CodeBlue[]
+  CodeAir   CodeAir[]
+  CodeRed   CodeRed[]
+  CodeLeak  CodeLeak[]
+}
+
+model Nodo {
+  id       String   @id @default(uuid())
+  nodo     String
+  building String
+  devices  Device[]
+}
+
+model Device {
+  id           String     @id @default(uuid())
+  lazo         String
+  location     String
+  device       String
+  nodo         Nodo       @relation(fields: [nodoId], references: [id])
+  nodoId       String
+  typeDevice   TypeDevice @relation(fields: [typeDeviceId], references: [id])
+  typeDeviceId String
+  operative    Boolean    @default(true)
+  observations String?
+}
+
+model TypeDevice {
+  id      String   @id @default(uuid())
+  type    String
+  devices Device[]
+}
