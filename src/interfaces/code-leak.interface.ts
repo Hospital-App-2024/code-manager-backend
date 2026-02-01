@@ -4,5 +4,6 @@ export interface ICodeLeak {
   createdAt: string;
   location: string;
   operator: string;
+  patientName?: string;
   patientDescription: string;
 }

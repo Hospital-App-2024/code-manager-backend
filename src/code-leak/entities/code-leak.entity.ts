@@ -9,7 +9,8 @@ export class CodeLeakEntity {
     public createdAt: Date,
     public location: string,
     public operator: Operator,
-    public patientDescription: string,
+    public patientName?: string,
+    public patientDescription?: string,
   ) {}
 
   public static fromObject(dto: CodeLeakEntity): ICodeLeak {
@@ -19,6 +20,7 @@ export class CodeLeakEntity {
       dto.createdAt,
       dto.location,
       dto.operator,
+      dto.patientName,
       dto.patientDescription,
     );
 
@@ -26,6 +28,8 @@ export class CodeLeakEntity {
       ...codeLeak,
       operator: codeLeak.operator.name,
       createdAt: formatDateTime(codeLeak.createdAt),
+      patientName: codeLeak.patientName ?? '',
+      patientDescription: codeLeak.patientDescription ?? '',
     };
   }
 

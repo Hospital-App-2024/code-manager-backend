@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsDate, IsString } from 'class-validator';
+import { IsDate, IsOptional, IsString } from 'class-validator';
 
 export class CreateCodeLeakDto {
   @IsString()
@@ -11,6 +11,9 @@ export class CreateCodeLeakDto {
   location: string;
   @IsString()
   operatorId: string;
+  @IsString()
+  @IsOptional()
+  patientName?: string;
   @IsString()
   patientDescription: string;
 }

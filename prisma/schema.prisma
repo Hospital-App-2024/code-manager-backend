@@ -80,6 +80,7 @@ model CodeLeak {
   location           String
   operator           Operator @relation(fields: [operatorId], references: [id])
   operatorId         String
+  patientName        String?
   patientDescription String
   observations       String?
 }
