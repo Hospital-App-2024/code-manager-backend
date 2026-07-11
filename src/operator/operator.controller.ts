@@ -20,7 +20,7 @@ export class OperatorController {
   }
 
   @Get()
-  @Auth(...operatorAccess)
+  @Auth(...basicAccess)
   findAll() {
     return this.operatorService.findAll();
   }

@@ -1,7 +1,6 @@
 import { formatMonth } from './formatDateTime';
 
 export interface Data {
-  _count: number;
   createdAt: Date;
 }
 
