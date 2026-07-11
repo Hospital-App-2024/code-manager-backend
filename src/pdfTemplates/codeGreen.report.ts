@@ -27,8 +27,8 @@ export const CodeGreenReport = ({
           body: [
             ['Fecha/Hora', 'Operador', 'Activado por', 'Ubicación', 'Evento'],
             ...greenCodes.map(({ codeGreen }) => [
-              codeGreen.createdAt,
-              codeGreen.operator,
+              codeGreen.createdAt ? codeGreen.createdAt.toLocaleString() : '',
+              codeGreen.operator ? codeGreen.operator.name : '',
               codeGreen.activeBy,
               codeGreen.location,
               codeGreen.event,
