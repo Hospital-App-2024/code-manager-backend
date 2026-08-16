@@ -1,11 +1,9 @@
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["postgresqlExtensions"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
-  provider   = "postgresql"
-  extensions = [vector]
+  provider = "postgresql"
 }
 
 model User {
@@ -38,36 +36,47 @@ model EmergencyCode {
   type           CodeType
   activeBy       String
   createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
   activationTime DateTime
   location       String
   operatorId     String
   operator       Operator @relation(fields: [operatorId], references: [id])
   observations   String?
 
-  // Code Green Fields
-  event    String?
-  police   Boolean?
+  // Ciclo de vida y estado universal
   isClosed Boolean?  @default(false)
   closedBy String?
   closedAt DateTime?
 
-  // Code Blue Fields
+  // Campos específicos Código Verde
+  event  String?
+  police Boolean?
+
+  // Campos específicos Código Azul
   team String?
 
-  // Code Air Fields
+  // Campos específicos Código Aéreo
   emergencyDetail String?
 
-  // Code Red Fields
+  // Campos específicos Código Rojo
   COGRID                Boolean?
   firefighterCalledTime DateTime?
 
-  // Code Leak Fields
+  // Campos específicos Código Fuga
   patientName        String?
   patientDescription String?
+
+  // Índices de alto rendimiento
+  @@index([type, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@index([operatorId])
+  @@index([isClosed])
 }
 
 model Operator {
   id             String          @id @default(uuid())
   name           String
   emergencyCodes EmergencyCode[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 }
