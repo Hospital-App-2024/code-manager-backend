@@ -1,10 +1,11 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  extensions = [vector]
 }
 
 model User {
@@ -33,25 +34,25 @@ enum CodeType {
 }
 
 model EmergencyCode {
-  id             String    @id @default(uuid())
+  id             String   @id @default(uuid())
   type           CodeType
   activeBy       String
-  createdAt      DateTime  @default(now())
+  createdAt      DateTime @default(now())
   activationTime DateTime
   location       String
   operatorId     String
-  operator       Operator  @relation(fields: [operatorId], references: [id])
+  operator       Operator @relation(fields: [operatorId], references: [id])
   observations   String?
 
   // Code Green Fields
-  event          String?
-  police         Boolean?
-  isClosed       Boolean?  @default(false)
-  closedBy       String?
-  closedAt       DateTime?
+  event    String?
+  police   Boolean?
+  isClosed Boolean?  @default(false)
+  closedBy String?
+  closedAt DateTime?
 
   // Code Blue Fields
-  team           String?
+  team String?
 
   // Code Air Fields
   emergencyDetail String?
