@@ -1,28 +1,21 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { PrismaClient, Role } from '@prisma/client';
-import * as bcryptjs from 'bcryptjs';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit {
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
   private readonly logger = new Logger('PrismaService');
 
   public async onModuleInit() {
     await this.$connect();
     this.logger.log('Connected to the database');
+  }
 
-    const existingUsers = await this.user.findMany();
-
-    if (existingUsers.length === 0) {
-      this.logger.log('Creating default user');
-      await this.user.create({
-        data: {
-          email: 'prueba@gmail.com',
-          password: bcryptjs.hashSync('prueba'),
-          name: 'prueba',
-          role: Role.Admin,
-          isActive: true,
-        },
-      });
-    }
+  public async onModuleDestroy() {
+    await this.$disconnect();
+    this.logger.log('Disconnected from the database');
   }
 }
+
