@@ -16,7 +16,6 @@ import { Auth } from '../auth/decorators/auth.decorator';
 
 import { CreateEmergencyCodeDto } from './dto/create-emergency-code.dto';
 import { UpdateEmergencyCodeDto } from './dto/update-emergency-code.dto';
-import { PaginationAndFilterDto } from '../common/dto/paginationAndFilter';
 import { EmergencyCodesFilterDto } from './dto/emergency-codes-filter.dto';
 
 import { basicAccess, operatorAccess } from '../common/helper/auth.roles';
@@ -34,9 +33,7 @@ export class EmergencyCodesController {
 
   @Get()
   @Auth(...basicAccess)
-  findAll(
-    @Query() filterDto: EmergencyCodesFilterDto,
-  ) {
+  findAll(@Query() filterDto: EmergencyCodesFilterDto) {
     return this.emergencyCodesService.findAll(filterDto, filterDto.type);
   }
 
@@ -47,12 +44,15 @@ export class EmergencyCodesController {
   }
 
   @Get('report')
+  @Auth(...basicAccess)
   public async generateReport(
     @Res() response: Response,
     @Query('type') type: CodeType,
   ) {
     if (!type) {
-      return response.status(400).json({ message: 'Se requiere el query param type' });
+      return response
+        .status(400)
+        .json({ message: 'Se requiere el query param type' });
     }
 
     const pdfDoc = await this.emergencyCodesService.generatePdf(type);

@@ -44,7 +44,8 @@ model EmergencyCode {
   observations   String?
 
   // Ciclo de vida y estado universal
-  isClosed Boolean?  @default(false)
+  // Solo GREEN posee ciclo de cierre; los demás tipos mantienen NULL.
+  isClosed Boolean?
   closedBy String?
   closedAt DateTime?
 
@@ -67,10 +68,9 @@ model EmergencyCode {
   patientDescription String?
 
   // Índices de alto rendimiento
-  @@index([type, createdAt(sort: Desc)])
-  @@index([createdAt(sort: Desc)])
+  @@index([type, activationTime(sort: Desc)])
+  @@index([activationTime(sort: Desc)])
   @@index([operatorId])
-  @@index([isClosed])
 }
 
 model Operator {

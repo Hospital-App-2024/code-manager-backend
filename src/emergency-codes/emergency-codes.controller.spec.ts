@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { EmergencyCodesController } from './emergency-codes.controller';
 import { EmergencyCodesService } from './emergency-codes.service';
 import { PassportModule } from '@nestjs/passport';
+import { GUARDS_METADATA } from '@nestjs/common/constants';
 
 describe('EmergencyCodesController', () => {
   let controller: EmergencyCodesController;
@@ -30,5 +31,14 @@ describe('EmergencyCodesController', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  it('protects PDF reports with authentication guards', () => {
+    const guards = Reflect.getMetadata(
+      GUARDS_METADATA,
+      EmergencyCodesController.prototype.generateReport,
+    );
+
+    expect(guards).toHaveLength(2);
   });
 });

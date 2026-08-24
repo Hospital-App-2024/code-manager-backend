@@ -1,5 +1,1 @@
--- AlterTable
-ALTER TABLE "EmergencyCode" ALTER COLUMN "updatedAt" DROP DEFAULT;
-
--- AlterTable
-ALTER TABLE "Operator" ALTER COLUMN "updatedAt" DROP DEFAULT;
+-- No-op: updatedAt defaults are finalized by 20260711143243_new_init.

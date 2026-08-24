@@ -1,4 +1,12 @@
-import { IsEnum, IsNotEmpty, IsString, IsOptional, IsBoolean, ValidateIf, IsDate } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsString,
+  IsOptional,
+  IsBoolean,
+  ValidateIf,
+  IsDate,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { CodeType } from '@prisma/client';
 
@@ -29,12 +37,12 @@ export class CreateEmergencyCodeDto {
   observations?: string;
 
   // Code Green Fields
-  @ValidateIf(o => o.type === CodeType.GREEN)
+  @ValidateIf((o) => o.type === CodeType.GREEN)
   @IsString()
   @IsNotEmpty()
   event?: string;
 
-  @ValidateIf(o => o.type === CodeType.GREEN)
+  @ValidateIf((o) => o.type === CodeType.GREEN)
   @IsBoolean()
   police?: boolean;
 
@@ -52,19 +60,19 @@ export class CreateEmergencyCodeDto {
   closedAt?: Date;
 
   // Code Blue Fields
-  @ValidateIf(o => o.type === CodeType.BLUE)
+  @ValidateIf((o) => o.type === CodeType.BLUE)
   @IsString()
   @IsNotEmpty()
   team?: string;
 
   // Code Air Fields
-  @ValidateIf(o => o.type === CodeType.AIR)
+  @ValidateIf((o) => o.type === CodeType.AIR)
   @IsString()
   @IsNotEmpty()
   emergencyDetail?: string;
 
   // Code Red Fields
-  @ValidateIf(o => o.type === CodeType.RED)
+  @ValidateIf((o) => o.type === CodeType.RED)
   @IsBoolean()
   COGRID?: boolean;
 
@@ -74,12 +82,11 @@ export class CreateEmergencyCodeDto {
   firefighterCalledTime?: Date;
 
   // Code Leak Fields
-  @ValidateIf(o => o.type === CodeType.LEAK)
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   patientName?: string;
 
-  @ValidateIf(o => o.type === CodeType.LEAK)
+  @ValidateIf((o) => o.type === CodeType.LEAK)
   @IsString()
   @IsNotEmpty()
   patientDescription?: string;

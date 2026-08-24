@@ -9,6 +9,7 @@ import { statisticMonths } from '../common/helper/statisticMonths';
 import { PrinterService } from '../printer/printer.service';
 import { CodeReport } from '../pdfTemplates/code.report';
 import { CodeType } from '@prisma/client';
+import { validateEmergencyCodeState } from './domain/emergency-code-invariants';
 
 @Injectable()
 export class EmergencyCodesService {
@@ -27,8 +28,18 @@ export class EmergencyCodesService {
       throw new BadRequestException('Operator not found');
     }
 
+    const normalizedState = {
+      ...createEmergencyCodeDto,
+      isClosed:
+        createEmergencyCodeDto.type === CodeType.GREEN
+          ? (createEmergencyCodeDto.isClosed ?? false)
+          : (createEmergencyCodeDto.isClosed ?? null),
+    };
+
+    validateEmergencyCodeState(normalizedState);
+
     const emergencyCode = await this.prismaService.emergencyCode.create({
-      data: createEmergencyCodeDto,
+      data: normalizedState,
       include: {
         operator: true,
       },
@@ -45,7 +56,7 @@ export class EmergencyCodesService {
 
     const whereCondition = {
       ...(type && { type }),
-      createdAt: {
+      activationTime: {
         gte: from ? new Date(from) : undefined,
         lte: to ? new Date(to) : undefined,
       },
@@ -60,7 +71,7 @@ export class EmergencyCodesService {
       take: limit,
       skip: limit && page ? limit * (page - 1) : undefined,
       orderBy: {
-        createdAt: 'desc',
+        activationTime: 'desc',
       },
       include: {
         operator: true,
@@ -90,12 +101,21 @@ export class EmergencyCodesService {
     return emergencyCode;
   }
 
-  public async update(id: string, updateEmergencyCodeDto: UpdateEmergencyCodeDto) {
+  public async update(
+    id: string,
+    updateEmergencyCodeDto: UpdateEmergencyCodeDto,
+  ) {
     const existing = await this.findOne(id);
 
     if (existing.isClosed) {
       throw new BadRequestException('Emergency Code is already closed');
     }
+
+    validateEmergencyCodeState({
+      ...existing,
+      ...updateEmergencyCodeDto,
+      isClosed: updateEmergencyCodeDto.isClosed ?? existing.isClosed ?? false,
+    });
 
     try {
       const updated = await this.prismaService.emergencyCode.update({
@@ -113,26 +133,28 @@ export class EmergencyCodesService {
     const data = await this.prismaService.emergencyCode.findMany({
       where: {
         ...(type && { type }),
-        createdAt: {
+        activationTime: {
           gte: new Date(new Date().getFullYear(), 0, 1),
           lte: new Date(new Date().getFullYear(), 11, 31),
         },
       },
       select: {
-        createdAt: true,
+        activationTime: true,
       },
       orderBy: {
-        createdAt: 'asc',
+        activationTime: 'asc',
       },
     });
 
-    return statisticMonths(data);
+    return statisticMonths(
+      data.map(({ activationTime }) => ({ createdAt: activationTime })),
+    );
   }
 
   public async generatePdf(type: CodeType) {
     const data = await this.prismaService.emergencyCode.findMany({
       where: { type },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { activationTime: 'desc' },
       include: { operator: true },
     });
 
@@ -144,10 +166,17 @@ export class EmergencyCodesService {
     switch (type) {
       case CodeType.GREEN:
         title = 'Reporte de Código Verde';
-        columnNames = ['Fecha/Hora', 'Carabineros', 'Ubicación', 'Evento', 'Activo por', 'Operador'];
+        columnNames = [
+          'Fecha/Hora',
+          'Carabineros',
+          'Ubicación',
+          'Evento',
+          'Activo por',
+          'Operador',
+        ];
         widths = ['auto', 'auto', '*', '*', 'auto', 'auto'];
         columnItems = data.map((item) => [
-          item.createdAt.toLocaleString(),
+          item.activationTime.toLocaleString(),
           item.police ? 'Sí' : 'No',
           item.location,
           item.event,
@@ -157,10 +186,16 @@ export class EmergencyCodesService {
         break;
       case CodeType.BLUE:
         title = 'Reporte de Código Azul';
-        columnNames = ['Fecha/Hora', 'Equipo', 'Ubicación', 'Activo por', 'Operador'];
+        columnNames = [
+          'Fecha/Hora',
+          'Equipo',
+          'Ubicación',
+          'Activo por',
+          'Operador',
+        ];
         widths = ['*', '*', 200, '*', '*'];
         columnItems = data.map((item) => [
-          item.createdAt.toLocaleString(),
+          item.activationTime.toLocaleString(),
           item.team,
           item.location,
           item.activeBy,
@@ -169,10 +204,16 @@ export class EmergencyCodesService {
         break;
       case CodeType.AIR:
         title = 'Reporte de Código Aéreo';
-        columnNames = ['Fecha/Hora', 'Lugar', 'Detalle', 'Activo por', 'Operador'];
+        columnNames = [
+          'Fecha/Hora',
+          'Lugar',
+          'Detalle',
+          'Activo por',
+          'Operador',
+        ];
         widths = ['*', 200, 200, '*', '*'];
         columnItems = data.map((item) => [
-          item.createdAt.toLocaleString(),
+          item.activationTime.toLocaleString(),
           item.location,
           item.emergencyDetail,
           item.activeBy,
@@ -181,10 +222,17 @@ export class EmergencyCodesService {
         break;
       case CodeType.RED:
         title = 'Reporte de Código Rojo';
-        columnNames = ['Fecha/Hora', 'COGRID', 'Hora Bomberos', 'Ubicación', 'Activo por', 'Operador'];
+        columnNames = [
+          'Fecha/Hora',
+          'COGRID',
+          'Hora Bomberos',
+          'Ubicación',
+          'Activo por',
+          'Operador',
+        ];
         widths = ['*', 'auto', '*', '*', '*', '*'];
         columnItems = data.map((item) => [
-          item.createdAt.toLocaleString(),
+          item.activationTime.toLocaleString(),
           item.COGRID ? 'Sí' : 'No',
           item.firefighterCalledTime?.toLocaleString() || 'N/A',
           item.location,
@@ -194,10 +242,16 @@ export class EmergencyCodesService {
         break;
       case CodeType.LEAK:
         title = 'Reporte de Código de Fuga';
-        columnNames = ['Fecha/Hora', 'Descripción paciente', 'Ubicación', 'Activo por', 'Operador'];
+        columnNames = [
+          'Fecha/Hora',
+          'Descripción paciente',
+          'Ubicación',
+          'Activo por',
+          'Operador',
+        ];
         widths = ['*', 200, '*', '*', '*'];
         columnItems = data.map((item) => [
-          item.createdAt.toLocaleString(),
+          item.activationTime.toLocaleString(),
           item.patientDescription,
           item.location,
           item.activeBy,
