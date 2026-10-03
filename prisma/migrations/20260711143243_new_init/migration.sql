@@ -122,9 +122,12 @@ INSERT INTO "EmergencyCode" (
   "event", "police", "team", "emergencyDetail", "COGRID",
   "firefighterCalledTime", "patientName", "patientDescription"
 )
+-- Los NULL de la primera rama llevan tipo explícito: PostgreSQL resuelve los
+-- NULL sin tipo de un UNION ALL como text y luego no los une con boolean/timestamp.
 SELECT "id", 'GREEN'::"CodeType", "activeBy", "createdAt", "createdAt", "createdAt",
-  "location", "operatorId", NULL, false, NULL, NULL,
-  "event", "police", NULL, NULL, NULL, NULL, NULL, NULL
+  "location", "operatorId", NULL::TEXT, false, NULL::TEXT, NULL::TIMESTAMP(3),
+  "event", "police", NULL::TEXT, NULL::TEXT, NULL::BOOLEAN, NULL::TIMESTAMP(3),
+  NULL::TEXT, NULL::TEXT
 FROM "CodeGreen"
 UNION ALL
 SELECT "id", 'BLUE'::"CodeType", "activeBy", "createdAt", "createdAt", "createdAt",
