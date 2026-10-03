@@ -11,6 +11,7 @@ import { CodeReport } from '../pdfTemplates/code.report';
 import { CodeType } from '@prisma/client';
 import { validateEmergencyCodeState } from './domain/emergency-code-invariants';
 import { formatBlueTeams } from './domain/blue-team-labels';
+import { formatDateTime } from '../common/helper/formatDateTime';
 
 const withOperators = { operator: true, closedByOperator: true } as const;
 
@@ -177,7 +178,7 @@ export class EmergencyCodesService {
         ];
         widths = ['auto', 'auto', '*', '*', 'auto', 'auto'];
         columnItems = data.map((item) => [
-          item.activationTime.toLocaleString(),
+          formatDateTime(item.activationTime),
           item.police ? 'Sí' : 'No',
           item.location,
           item.event,
@@ -196,7 +197,7 @@ export class EmergencyCodesService {
         ];
         widths = ['*', '*', 200, '*', '*'];
         columnItems = data.map((item) => [
-          item.activationTime.toLocaleString(),
+          formatDateTime(item.activationTime),
           formatBlueTeams(item.teams),
           item.location,
           item.activeBy,
@@ -214,7 +215,7 @@ export class EmergencyCodesService {
         ];
         widths = ['*', 200, 200, '*', '*'];
         columnItems = data.map((item) => [
-          item.activationTime.toLocaleString(),
+          formatDateTime(item.activationTime),
           item.location,
           item.emergencyDetail,
           item.activeBy,
@@ -234,10 +235,12 @@ export class EmergencyCodesService {
         ];
         widths = ['*', 'auto', '*', '*', '*', '*', '*'];
         columnItems = data.map((item) => [
-          item.activationTime.toLocaleString(),
+          formatDateTime(item.activationTime),
           item.cogridNotified ? 'Sí' : 'No',
-          item.cogridNotifiedAt?.toLocaleString() || 'N/A',
-          item.firefighterCalledTime?.toLocaleString() || 'N/A',
+          item.cogridNotifiedAt ? formatDateTime(item.cogridNotifiedAt) : 'N/A',
+          item.firefighterCalledTime
+            ? formatDateTime(item.firefighterCalledTime)
+            : 'N/A',
           item.location,
           item.activeBy,
           item.operator.name,
@@ -254,7 +257,7 @@ export class EmergencyCodesService {
         ];
         widths = ['*', 200, '*', '*', '*'];
         columnItems = data.map((item) => [
-          item.activationTime.toLocaleString(),
+          formatDateTime(item.activationTime),
           item.patientDescription,
           item.location,
           item.activeBy,

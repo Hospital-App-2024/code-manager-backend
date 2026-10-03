@@ -6,6 +6,9 @@ import { PrinterService } from '../printer/printer.service';
 import { BlueTeam, CodeType, EmergencyCode, Operator } from '@prisma/client';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 
+// DD/MM/YYYY, h:mm AM/PM
+const DATE_TIME_PATTERN = /^\d{2}\/\d{2}\/\d{4}, \d{1,2}:\d{2}/;
+
 describe('EmergencyCodesService', () => {
   let service: EmergencyCodesService;
   let prismaService: {
@@ -343,6 +346,8 @@ describe('EmergencyCodesService', () => {
 
       const [, row] = tableBody();
       expect(row[1]).toBe('UCI, UCI Pediátrica');
+      // Día/mes/año sin depender del idioma del servidor (en-US daría 8/24/2026).
+      expect(row[0]).toMatch(DATE_TIME_PATTERN);
     });
 
     it('shows the COGRID flag and its communication time', async () => {
@@ -361,10 +366,8 @@ describe('EmergencyCodesService', () => {
 
       const [header, notified, notNotified] = tableBody();
       expect(header).toHaveLength(7);
-      expect(notified.slice(1, 3)).toEqual([
-        'Sí',
-        cogridNotifiedAt.toLocaleString(),
-      ]);
+      expect(notified[1]).toBe('Sí');
+      expect(notified[2]).toMatch(DATE_TIME_PATTERN);
       expect(notNotified.slice(1, 3)).toEqual(['No', 'N/A']);
     });
   });
