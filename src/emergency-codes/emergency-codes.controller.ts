@@ -47,15 +47,20 @@ export class EmergencyCodesController {
   @Auth(...basicAccess)
   public async generateReport(
     @Res() response: Response,
-    @Query('type') type: CodeType,
+    @Query() filterDto: EmergencyCodesFilterDto,
   ) {
+    const { type, from, to } = filterDto;
+
     if (!type) {
       return response
         .status(400)
         .json({ message: 'Se requiere el query param type' });
     }
 
-    const pdfDoc = await this.emergencyCodesService.generatePdf(type);
+    const pdfDoc = await this.emergencyCodesService.generatePdf(type, {
+      from,
+      to,
+    });
 
     response.setHeader('Content-Type', 'application/pdf');
     pdfDoc.info.Title = `Reporte de Código ${type}`;

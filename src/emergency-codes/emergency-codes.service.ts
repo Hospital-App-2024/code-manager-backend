@@ -11,9 +11,22 @@ import { CodeReport } from '../pdfTemplates/code.report';
 import { CodeType } from '@prisma/client';
 import { validateEmergencyCodeState } from './domain/emergency-code-invariants';
 import { formatBlueTeams } from './domain/blue-team-labels';
-import { formatDateTime } from '../common/helper/formatDateTime';
+import { formatDate, formatDateTime } from '../common/helper/formatDateTime';
 
 const withOperators = { operator: true, closedByOperator: true } as const;
+
+interface DateRange {
+  from?: Date;
+  to?: Date;
+}
+
+// Texto del subtítulo del reporte cuando se filtra por fechas.
+const describeRange = ({ from, to }: DateRange): string | undefined => {
+  if (from && to) return `Del ${formatDate(from)} al ${formatDate(to)}`;
+  if (from) return `Desde el ${formatDate(from)}`;
+  if (to) return `Hasta el ${formatDate(to)}`;
+  return undefined;
+};
 
 @Injectable()
 export class EmergencyCodesService {
@@ -51,6 +64,8 @@ export class EmergencyCodesService {
     type?: CodeType,
   ) {
     const { from, to, limit, page } = paginationAndFilterDto;
+
+    this.assertValidRange({ from, to });
 
     const whereCondition = {
       ...(type && { type }),
@@ -153,9 +168,14 @@ export class EmergencyCodesService {
     );
   }
 
-  public async generatePdf(type: CodeType) {
+  public async generatePdf(type: CodeType, range: DateRange = {}) {
+    this.assertValidRange(range);
+
     const data = await this.prismaService.emergencyCode.findMany({
-      where: { type },
+      where: {
+        type,
+        activationTime: { gte: range.from, lte: range.to },
+      },
       orderBy: { activationTime: 'desc' },
       include: { operator: true },
     });
@@ -269,6 +289,7 @@ export class EmergencyCodesService {
     const doc = this.printerService.createPdf({
       docDefinitions: CodeReport({
         title,
+        subtitle: describeRange(range),
         columnNames,
         columnItems,
         widths,
@@ -276,6 +297,12 @@ export class EmergencyCodesService {
     });
 
     return doc;
+  }
+
+  private assertValidRange({ from, to }: DateRange): void {
+    if (from && to && from > to) {
+      throw new BadRequestException('from cannot be later than to');
+    }
   }
 
   private async ensureOperatorExists(

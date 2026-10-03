@@ -371,4 +371,68 @@ describe('EmergencyCodesService', () => {
       expect(notNotified.slice(1, 3)).toEqual(['No', 'N/A']);
     });
   });
+
+  describe('date range', () => {
+    // Lo que envía el frontend: inicio del día y fin del día locales (UTC-3).
+    const from = new Date('2026-09-01T03:00:00.000Z');
+    const to = new Date('2026-10-01T02:59:59.999Z');
+
+    const reportHeader = () =>
+      JSON.stringify(
+        printerService.createPdf.mock.calls[0][0].docDefinitions.header(1),
+      );
+
+    it('filters the report by activation time and says so in its header', async () => {
+      await service.generatePdf(CodeType.GREEN, { from, to });
+
+      expect(prismaService.emergencyCode.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            type: CodeType.GREEN,
+            activationTime: { gte: from, lte: to },
+          },
+        }),
+      );
+      expect(reportHeader()).toMatch(
+        /Del \d{2}\/\d{2}\/\d{4} al \d{2}\/\d{2}\/\d{4}/,
+      );
+    });
+
+    it('describes a range with only one end', async () => {
+      await service.generatePdf(CodeType.GREEN, { from });
+      expect(reportHeader()).toMatch(/Desde el \d{2}\/\d{2}\/\d{4}/);
+
+      printerService.createPdf.mockClear();
+      await service.generatePdf(CodeType.GREEN, { to });
+      expect(reportHeader()).toMatch(/Hasta el \d{2}\/\d{2}\/\d{4}/);
+    });
+
+    it('adds no range text when the report is not filtered', async () => {
+      await service.generatePdf(CodeType.GREEN);
+
+      expect(reportHeader()).not.toMatch(/Del |Desde el|Hasta el/);
+      expect(prismaService.emergencyCode.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            type: CodeType.GREEN,
+            activationTime: { gte: undefined, lte: undefined },
+          },
+        }),
+      );
+    });
+
+    it('rejects a range that starts after it ends', async () => {
+      await expect(
+        service.generatePdf(CodeType.GREEN, { from: to, to: from }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      await expect(
+        service.findAll(
+          { from: to, to: from, page: 1, limit: 20 },
+          CodeType.GREEN,
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+
+      expect(prismaService.emergencyCode.findMany).not.toHaveBeenCalled();
+    });
+  });
 });

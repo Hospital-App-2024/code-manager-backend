@@ -4,6 +4,10 @@ export const formatDateTime = (date: Date) => {
   return format(date, 'DD/MM/YYYY, h:mm A');
 };
 
+export const formatDate = (date: Date) => {
+  return format(date, 'DD/MM/YYYY');
+};
+
 export const formatTime = (date: Date) => {
   return format(date, {
     time: 'short',
