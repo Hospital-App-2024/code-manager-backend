@@ -31,6 +31,12 @@ enum CodeType {
   LEAK
 }
 
+enum BlueTeam {
+  EMERGENCY
+  ICU
+  PEDIATRIC_ICU
+}
+
 model EmergencyCode {
   id             String   @id @default(uuid())
   type           CodeType
@@ -40,27 +46,29 @@ model EmergencyCode {
   activationTime DateTime
   location       String
   operatorId     String
-  operator       Operator @relation(fields: [operatorId], references: [id])
+  operator       Operator @relation("RegisteredBy", fields: [operatorId], references: [id])
   observations   String?
 
-  // Ciclo de vida y estado universal
-  // Solo GREEN posee ciclo de cierre; los demás tipos mantienen NULL.
-  isClosed Boolean?
-  closedBy String?
-  closedAt DateTime?
+  // Cierre: solo GREEN. Abierto = closedAt NULL; los demás tipos mantienen NULL.
+  // closedByOperatorId es NULL en cierres históricos previos a este campo.
+  closedBy           String?
+  closedAt           DateTime?
+  closedByOperatorId String?
+  closedByOperator   Operator? @relation("ClosedBy", fields: [closedByOperatorId], references: [id], onDelete: Restrict)
 
   // Campos específicos Código Verde
   event  String?
   police Boolean?
 
-  // Campos específicos Código Azul
-  team String?
+  // Campos específicos Código Azul (uno o más equipos)
+  teams BlueTeam[] @default([])
 
   // Campos específicos Código Aéreo
   emergencyDetail String?
 
   // Campos específicos Código Rojo
-  COGRID                Boolean?
+  cogridNotified        Boolean?
+  cogridNotifiedAt      DateTime?
   firefighterCalledTime DateTime?
 
   // Campos específicos Código Fuga
@@ -71,12 +79,14 @@ model EmergencyCode {
   @@index([type, activationTime(sort: Desc)])
   @@index([activationTime(sort: Desc)])
   @@index([operatorId])
+  @@index([closedByOperatorId])
 }
 
 model Operator {
   id             String          @id @default(uuid())
   name           String
-  emergencyCodes EmergencyCode[]
+  emergencyCodes EmergencyCode[] @relation("RegisteredBy")
+  closedCodes    EmergencyCode[] @relation("ClosedBy")
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 }

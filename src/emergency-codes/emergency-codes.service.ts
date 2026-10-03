@@ -10,6 +10,9 @@ import { PrinterService } from '../printer/printer.service';
 import { CodeReport } from '../pdfTemplates/code.report';
 import { CodeType } from '@prisma/client';
 import { validateEmergencyCodeState } from './domain/emergency-code-invariants';
+import { formatBlueTeams } from './domain/blue-team-labels';
+
+const withOperators = { operator: true, closedByOperator: true } as const;
 
 @Injectable()
 export class EmergencyCodesService {
@@ -20,29 +23,23 @@ export class EmergencyCodesService {
   ) {}
 
   public async create(createEmergencyCodeDto: CreateEmergencyCodeDto) {
-    const operator = await this.operatorService.findOne(
+    await this.ensureOperatorExists(
       createEmergencyCodeDto.operatorId,
+      'Operator not found',
     );
 
-    if (!operator) {
-      throw new BadRequestException('Operator not found');
+    if (createEmergencyCodeDto.closedByOperatorId) {
+      await this.ensureOperatorExists(
+        createEmergencyCodeDto.closedByOperatorId,
+        'Closing operator not found',
+      );
     }
 
-    const normalizedState = {
-      ...createEmergencyCodeDto,
-      isClosed:
-        createEmergencyCodeDto.type === CodeType.GREEN
-          ? (createEmergencyCodeDto.isClosed ?? false)
-          : (createEmergencyCodeDto.isClosed ?? null),
-    };
-
-    validateEmergencyCodeState(normalizedState);
+    validateEmergencyCodeState(createEmergencyCodeDto);
 
     const emergencyCode = await this.prismaService.emergencyCode.create({
-      data: normalizedState,
-      include: {
-        operator: true,
-      },
+      data: createEmergencyCodeDto,
+      include: withOperators,
     });
 
     return emergencyCode;
@@ -73,9 +70,7 @@ export class EmergencyCodesService {
       orderBy: {
         activationTime: 'desc',
       },
-      include: {
-        operator: true,
-      },
+      include: withOperators,
     });
 
     return {
@@ -91,7 +86,7 @@ export class EmergencyCodesService {
   public async findOne(id: string) {
     const emergencyCode = await this.prismaService.emergencyCode.findUnique({
       where: { id },
-      include: { operator: true },
+      include: withOperators,
     });
 
     if (!emergencyCode) {
@@ -107,21 +102,27 @@ export class EmergencyCodesService {
   ) {
     const existing = await this.findOne(id);
 
-    if (existing.isClosed) {
+    if (existing.closedAt) {
       throw new BadRequestException('Emergency Code is already closed');
+    }
+
+    if (updateEmergencyCodeDto.closedByOperatorId) {
+      await this.ensureOperatorExists(
+        updateEmergencyCodeDto.closedByOperatorId,
+        'Closing operator not found',
+      );
     }
 
     validateEmergencyCodeState({
       ...existing,
       ...updateEmergencyCodeDto,
-      isClosed: updateEmergencyCodeDto.isClosed ?? existing.isClosed ?? false,
     });
 
     try {
       const updated = await this.prismaService.emergencyCode.update({
         where: { id },
         data: updateEmergencyCodeDto,
-        include: { operator: true },
+        include: withOperators,
       });
       return updated;
     } catch (error) {
@@ -196,7 +197,7 @@ export class EmergencyCodesService {
         widths = ['*', '*', 200, '*', '*'];
         columnItems = data.map((item) => [
           item.activationTime.toLocaleString(),
-          item.team,
+          formatBlueTeams(item.teams),
           item.location,
           item.activeBy,
           item.operator.name,
@@ -225,15 +226,17 @@ export class EmergencyCodesService {
         columnNames = [
           'Fecha/Hora',
           'COGRID',
+          'Hora COGRID',
           'Hora Bomberos',
           'Ubicación',
           'Activo por',
           'Operador',
         ];
-        widths = ['*', 'auto', '*', '*', '*', '*'];
+        widths = ['*', 'auto', '*', '*', '*', '*', '*'];
         columnItems = data.map((item) => [
           item.activationTime.toLocaleString(),
-          item.COGRID ? 'Sí' : 'No',
+          item.cogridNotified ? 'Sí' : 'No',
+          item.cogridNotifiedAt?.toLocaleString() || 'N/A',
           item.firefighterCalledTime?.toLocaleString() || 'N/A',
           item.location,
           item.activeBy,
@@ -270,5 +273,16 @@ export class EmergencyCodesService {
     });
 
     return doc;
+  }
+
+  private async ensureOperatorExists(
+    operatorId: string,
+    message: string,
+  ): Promise<void> {
+    const operator = await this.operatorService.findOne(operatorId);
+
+    if (!operator) {
+      throw new BadRequestException(message);
+    }
   }
 }

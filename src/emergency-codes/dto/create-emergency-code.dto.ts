@@ -1,4 +1,7 @@
 import {
+  ArrayNotEmpty,
+  ArrayUnique,
+  IsArray,
   IsEnum,
   IsNotEmpty,
   IsString,
@@ -8,7 +11,7 @@ import {
   IsDate,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { CodeType } from '@prisma/client';
+import { BlueTeam, CodeType } from '@prisma/client';
 
 export class CreateEmergencyCodeDto {
   @IsEnum(CodeType)
@@ -46,10 +49,7 @@ export class CreateEmergencyCodeDto {
   @IsBoolean()
   police?: boolean;
 
-  @IsOptional()
-  @IsBoolean()
-  isClosed?: boolean;
-
+  // Closure (GREEN only): a code is closed once these three are sent together.
   @IsOptional()
   @IsString()
   closedBy?: string;
@@ -59,11 +59,18 @@ export class CreateEmergencyCodeDto {
   @Type(() => Date)
   closedAt?: Date;
 
-  // Code Blue Fields
-  @ValidateIf((o) => o.type === CodeType.BLUE)
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
-  team?: string;
+  closedByOperatorId?: string;
+
+  // Code Blue Fields
+  @ValidateIf((o) => o.type === CodeType.BLUE)
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayUnique()
+  @IsEnum(BlueTeam, { each: true })
+  teams?: BlueTeam[];
 
   // Code Air Fields
   @ValidateIf((o) => o.type === CodeType.AIR)
@@ -74,7 +81,12 @@ export class CreateEmergencyCodeDto {
   // Code Red Fields
   @ValidateIf((o) => o.type === CodeType.RED)
   @IsBoolean()
-  COGRID?: boolean;
+  cogridNotified?: boolean;
+
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  cogridNotifiedAt?: Date;
 
   @IsOptional()
   @IsDate()
