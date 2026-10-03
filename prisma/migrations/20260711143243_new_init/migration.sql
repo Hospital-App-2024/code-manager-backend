@@ -7,6 +7,7 @@ DECLARE
   required_table TEXT;
   duplicate_ids BIGINT;
   orphan_operators BIGINT;
+  incomplete_closures BIGINT;
 BEGIN
   FOREACH required_table IN ARRAY ARRAY[
     'User', 'Operator', 'CodeGreen', 'CodeBlue', 'CodeAir', 'CodeRed', 'CodeLeak'
@@ -48,6 +49,20 @@ BEGIN
 
   IF orphan_operators > 0 THEN
     RAISE EXCEPTION 'Preflight failed: % orphan operator references', orphan_operators;
+  END IF;
+
+  SELECT COUNT(*)
+  INTO incomplete_closures
+  FROM "CodeGreen"
+  WHERE "isClosed"
+    AND (
+      NULLIF(BTRIM("closedBy"), '') IS NULL
+      OR "closedAt" IS NULL
+      OR "closedAt" < "createdAt"
+    );
+
+  IF incomplete_closures > 0 THEN
+    RAISE EXCEPTION 'Preflight failed: % closed CodeGreen rows without a complete closure (closedBy, closedAt >= createdAt)', incomplete_closures;
   END IF;
 END $$;
 
@@ -124,30 +139,43 @@ INSERT INTO "EmergencyCode" (
 )
 -- Los NULL de la primera rama llevan tipo explícito: PostgreSQL resuelve los
 -- NULL sin tipo de un UNION ALL como text y luego no los une con boolean/timestamp.
+-- Un verde se considera cerrado si "isClosed" lo marcaba o si conserva sus datos de
+-- cierre completos (cierres antiguos con la bandera sin actualizar). Un verde abierto
+-- no conserva closedBy/closedAt, que EmergencyCode_closure_check exige en NULL.
 SELECT "id", 'GREEN'::"CodeType", "activeBy", "createdAt", "createdAt", "createdAt",
-  "location", "operatorId", NULL::TEXT, false, NULL::TEXT, NULL::TIMESTAMP(3),
+  "location", "operatorId", "observations",
+  green_state.closed,
+  CASE WHEN green_state.closed THEN "closedBy" END,
+  CASE WHEN green_state.closed THEN "closedAt" END,
   "event", "police", NULL::TEXT, NULL::TEXT, NULL::BOOLEAN, NULL::TIMESTAMP(3),
   NULL::TEXT, NULL::TEXT
 FROM "CodeGreen"
+CROSS JOIN LATERAL (
+  SELECT "isClosed" OR (
+    NULLIF(BTRIM("closedBy"), '') IS NOT NULL
+    AND "closedAt" IS NOT NULL
+    AND "closedAt" >= "createdAt"
+  ) AS closed
+) green_state
 UNION ALL
 SELECT "id", 'BLUE'::"CodeType", "activeBy", "createdAt", "createdAt", "createdAt",
-  "location", "operatorId", NULL, NULL, NULL, NULL,
+  "location", "operatorId", "observations", NULL, NULL, NULL,
   NULL, NULL, "team", NULL, NULL, NULL, NULL, NULL
 FROM "CodeBlue"
 UNION ALL
 SELECT "id", 'AIR'::"CodeType", "activeBy", "createdAt", "createdAt", "createdAt",
-  "location", "operatorId", NULL, NULL, NULL, NULL,
+  "location", "operatorId", "observations", NULL, NULL, NULL,
   NULL, NULL, NULL, "emergencyDetail", NULL, NULL, NULL, NULL
 FROM "CodeAir"
 UNION ALL
 SELECT "id", 'RED'::"CodeType", "activeBy", "createdAt", "createdAt", "createdAt",
-  "location", "operatorId", NULL, NULL, NULL, NULL,
+  "location", "operatorId", "observations", NULL, NULL, NULL,
   NULL, NULL, NULL, NULL, "COGRID", "firefighterCalledTime", NULL, NULL
 FROM "CodeRed"
 UNION ALL
 SELECT "id", 'LEAK'::"CodeType", "activeBy", "createdAt", "createdAt", "createdAt",
-  "location", "operatorId", NULL, NULL, NULL, NULL,
-  NULL, NULL, NULL, NULL, NULL, NULL, NULL, "patientDescription"
+  "location", "operatorId", "observations", NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL, NULL, NULL, "patientName", "patientDescription"
 FROM "CodeLeak";
 
 ALTER TABLE "EmergencyCode"
@@ -186,6 +214,17 @@ BEGIN
     OR (SELECT COUNT(*) FROM "EmergencyCode" WHERE "type" = 'RED') <> (SELECT COUNT(*) FROM "CodeRed")
     OR (SELECT COUNT(*) FROM "EmergencyCode" WHERE "type" = 'LEAK') <> (SELECT COUNT(*) FROM "CodeLeak") THEN
     RAISE EXCEPTION 'Verification failed: per-type row counts differ';
+  END IF;
+
+  IF (SELECT COUNT(*) FROM "EmergencyCode" WHERE "type" = 'GREEN' AND "isClosed") <> (
+    SELECT COUNT(*) FROM "CodeGreen"
+    WHERE "isClosed" OR (
+      NULLIF(BTRIM("closedBy"), '') IS NOT NULL
+      AND "closedAt" IS NOT NULL
+      AND "closedAt" >= "createdAt"
+    )
+  ) THEN
+    RAISE EXCEPTION 'Verification failed: closed CodeGreen rows differ';
   END IF;
 END $$;
 

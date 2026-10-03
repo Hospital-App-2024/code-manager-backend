@@ -25,6 +25,12 @@ const readMigration = (name: string) =>
     'utf8',
   );
 
+// El esquema antiguo se construye con las migraciones reales, no con tablas
+// escritas a mano: así las pruebas ven las mismas columnas que producción.
+const LEGACY_MIGRATIONS = [
+  '20240627210926_init',
+  '20260201134327_add_patient_name_to_leak',
+];
 const NEW_INIT_MIGRATION = '20260711143243_new_init';
 const TEAMS_MIGRATION =
   '20261003120000_blue_teams_cogrid_time_closure_operator';
@@ -32,57 +38,73 @@ const TEAMS_MIGRATION =
 describe('emergency-code migrations', () => {
   let client: Client;
 
+  const emergencyIds = async () => {
+    const result = await client.query<{ id: string }>(
+      `SELECT id FROM "EmergencyCode"`,
+    );
+    return result.rows.map(({ id }) => id).sort();
+  };
+
+  const columnNames = async () => {
+    const result = await client.query<{ column_name: string }>(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_name = 'EmergencyCode'
+    `);
+    return result.rows.map(({ column_name }) => column_name);
+  };
+
   beforeAll(async () => {
     client = new Client({ connectionString: requireSafeTestDatabaseUrl() });
     await client.connect();
     await client.query('DROP SCHEMA public CASCADE; CREATE SCHEMA public;');
-    await client.query(`
-      CREATE TYPE "Role" AS ENUM ('User', 'Admin', 'Operator');
-      CREATE TABLE "User" (
-        "id" TEXT PRIMARY KEY, "email" TEXT UNIQUE NOT NULL, "name" TEXT,
-        "password" TEXT NOT NULL, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        "updatedAt" TIMESTAMP(3) NOT NULL, "role" "Role" NOT NULL DEFAULT 'User',
-        "isActive" BOOLEAN NOT NULL DEFAULT false
-      );
-      CREATE TABLE "Operator" ("id" TEXT PRIMARY KEY, "name" TEXT NOT NULL);
-      CREATE TABLE "CodeGreen" (
-        "id" TEXT PRIMARY KEY, "activeBy" TEXT NOT NULL, "createdAt" TIMESTAMP(3) NOT NULL,
-        "location" TEXT NOT NULL, "event" TEXT NOT NULL, "operatorId" TEXT NOT NULL,
-        "police" BOOLEAN NOT NULL,
-        FOREIGN KEY ("operatorId") REFERENCES "Operator"("id")
-      );
-    `);
+
+    for (const migration of LEGACY_MIGRATIONS) {
+      await client.query(readMigration(migration));
+    }
 
     await client.query(`
-      CREATE TABLE "CodeBlue" (
-        "id" TEXT PRIMARY KEY, "activeBy" TEXT NOT NULL, "createdAt" TIMESTAMP(3) NOT NULL,
-        "location" TEXT NOT NULL, "team" TEXT NOT NULL, "operatorId" TEXT NOT NULL REFERENCES "Operator"("id")
-      );
-      CREATE TABLE "CodeAir" (
-        "id" TEXT PRIMARY KEY, "activeBy" TEXT NOT NULL, "createdAt" TIMESTAMP(3) NOT NULL,
-        "emergencyDetail" TEXT NOT NULL, "location" TEXT NOT NULL,
-        "operatorId" TEXT NOT NULL REFERENCES "Operator"("id")
-      );
-      CREATE TABLE "CodeRed" (
-        "id" TEXT PRIMARY KEY, "createdAt" TIMESTAMP(3) NOT NULL, "activeBy" TEXT NOT NULL,
-        "operatorId" TEXT NOT NULL REFERENCES "Operator"("id"), "location" TEXT NOT NULL,
-        "COGRID" BOOLEAN NOT NULL, "firefighterCalledTime" TIMESTAMP(3)
-      );
-      CREATE TABLE "CodeLeak" (
-        "id" TEXT PRIMARY KEY, "activeBy" TEXT NOT NULL, "createdAt" TIMESTAMP(3) NOT NULL,
-        "location" TEXT NOT NULL, "operatorId" TEXT NOT NULL REFERENCES "Operator"("id"),
-        "patientDescription" TEXT NOT NULL
-      );
+      INSERT INTO "Operator" ("id", "name") VALUES ('operator-1', 'Operador Uno');
 
-      INSERT INTO "Operator" (id, name) VALUES ('operator-1', 'Operador Uno');
-      INSERT INTO "CodeGreen" VALUES ('green-1', 'Central', '2026-08-24 10:00:00', 'Urgencias', 'Incidente', 'operator-1', false);
-      INSERT INTO "CodeBlue" VALUES ('blue-1', 'Central', '2026-08-24 10:01:00', 'UCI', 'Equipo UCI', 'operator-1');
-      INSERT INTO "CodeAir" VALUES ('air-1', 'Central', '2026-08-24 10:02:00', 'Helicóptero', 'Helipuerto', 'operator-1');
-      INSERT INTO "CodeRed" VALUES ('red-1', '2026-08-24 10:03:00', 'Central', 'operator-1', 'Bodega', true, NULL);
-      INSERT INTO "CodeLeak" VALUES ('leak-1', 'Central', '2026-08-24 10:04:00', 'Urgencias', 'operator-1', 'Vestimenta azul');
+      INSERT INTO "CodeGreen"
+        ("id", "activeBy", "createdAt", "location", "event", "operatorId", "police",
+         "observations", "isClosed", "closedBy", "closedAt")
+      VALUES
+        ('green-open', 'Central', '2026-08-24 12:00:00', 'Urgencias', 'Riña', 'operator-1', true,
+         'Se avisó a guardia', false, NULL, NULL),
+        ('green-closed', 'Central', '2026-08-24 10:00:00', 'Urgencias', 'Incidente', 'operator-1', false,
+         NULL, true, 'Dra. Pérez', '2026-08-24 10:30:00'),
+        -- Cierre antiguo con la bandera sin actualizar: conserva todos sus datos de cierre.
+        ('green-stale-flag', 'Central', '2026-08-24 11:00:00', 'Urgencias', 'Hurto', 'operator-1', false,
+         NULL, false, 'Dr. Rojas', '2026-08-24 11:20:00'),
+        -- Datos de cierre a medias en un código abierto: se descartan.
+        ('green-partial', 'Central', '2026-08-24 11:30:00', 'Urgencias', 'Agresión', 'operator-1', false,
+         NULL, false, 'Solo nombre', NULL),
+        -- Marcado como cerrado sin datos de cierre: bloquea la migración hasta repararlo.
+        ('green-incomplete', 'Central', '2026-08-24 09:00:00', 'Urgencias', 'Riña', 'operator-1', false,
+         NULL, true, NULL, NULL);
+
+      INSERT INTO "CodeBlue"
+        ("id", "activeBy", "createdAt", "location", "team", "operatorId", "observations")
+      VALUES
+        ('blue-urgencia', 'Central', '2026-08-24 10:01:00', 'Urgencias', 'urgencia', 'operator-1', 'Paro presenciado'),
+        ('blue-uci', 'Central', '2026-08-24 10:02:00', 'UCI', 'uci', 'operator-1', NULL),
+        ('blue-pediatric', 'Central', '2026-08-24 10:03:00', 'Pediatría', 'uci pediátrica', 'operator-1', NULL);
+
+      INSERT INTO "CodeAir"
+        ("id", "activeBy", "createdAt", "emergencyDetail", "location", "operatorId", "observations")
+      VALUES
+        ('air-1', 'Central', '2026-08-24 10:04:00', 'Helicóptero', 'Helipuerto', 'operator-1', 'Aterrizaje en curso');
+
+      INSERT INTO "CodeRed"
+        ("id", "createdAt", "activeBy", "operatorId", "location", "COGRID", "firefighterCalledTime", "observations")
+      VALUES
+        ('red-1', '2026-08-24 10:05:00', 'Central', 'operator-1', 'Bodega', true, '2026-08-24 10:08:00', NULL);
+
+      INSERT INTO "CodeLeak"
+        ("id", "activeBy", "createdAt", "location", "operatorId", "patientDescription", "observations", "patientName")
+      VALUES
+        ('leak-1', 'Central', '2026-08-24 10:06:00', 'Urgencias', 'operator-1', 'Vestimenta azul', 'Visto en el pasillo', 'Paciente Prueba');
     `);
-
-    await client.query(readMigration(NEW_INIT_MIGRATION));
   });
 
   afterAll(async () => {
@@ -90,50 +112,147 @@ describe('emergency-code migrations', () => {
   });
 
   describe('legacy tables to EmergencyCode (new_init)', () => {
-    it('preserves all IDs and maps the operational activation time', async () => {
-      const result = await client.query<{
-        id: string;
-        activationTime: string;
-      }>(`
-        SELECT id, "activationTime"::text AS "activationTime"
-        FROM "EmergencyCode" ORDER BY id
-      `);
-
-      expect(result.rows).toHaveLength(5);
-      expect(result.rows.map(({ id }) => id)).toEqual([
-        'air-1',
-        'blue-1',
-        'green-1',
-        'leak-1',
-        'red-1',
-      ]);
-      expect(
-        result.rows.find(({ id }) => id === 'green-1')?.activationTime,
-      ).toBe('2026-08-24 10:00:00');
-    });
-
-    it('retains every source table under its legacy name', async () => {
-      const result = await client.query<{ legacyCount: string }>(`
-        SELECT COUNT(*) AS "legacyCount"
-        FROM pg_class
-        WHERE relname IN (
-          'CodeGreen_legacy_20260824', 'CodeBlue_legacy_20260824',
-          'CodeAir_legacy_20260824', 'CodeRed_legacy_20260824',
-          'CodeLeak_legacy_20260824'
-        )
-      `);
-
-      expect(Number(result.rows[0].legacyCount)).toBe(5);
-    });
-
-    it('rejects closure state for a non-green emergency', async () => {
+    it('aborts before copying anything when a closed green lacks its closure data', async () => {
       await expect(
-        client.query(`
-          UPDATE "EmergencyCode"
-          SET "isClosed" = false
-          WHERE id = 'blue-1'
-        `),
-      ).rejects.toMatchObject({ constraint: 'EmergencyCode_closure_check' });
+        client.query(readMigration(NEW_INIT_MIGRATION)),
+      ).rejects.toThrow(/closed CodeGreen rows without a complete closure/);
+      // La migración abre su propia transacción: se descarta como lo haría el cierre de la conexión.
+      await client.query('ROLLBACK');
+
+      const created = await client.query(
+        `SELECT to_regclass('"EmergencyCode"') AS t`,
+      );
+      expect(created.rows[0].t).toBeNull();
+
+      // Reparación manual del dato de origen.
+      await client.query(`
+        UPDATE "CodeGreen"
+        SET "closedBy" = 'Jefe de turno', "closedAt" = '2026-08-24 13:00:00'
+        WHERE id = 'green-incomplete'
+      `);
+    });
+
+    describe('once the legacy data is consistent', () => {
+      beforeAll(async () => {
+        await client.query(readMigration(NEW_INIT_MIGRATION));
+      });
+
+      it('preserves all IDs and maps the operational activation time', async () => {
+        const result = await client.query<{
+          id: string;
+          activationTime: string;
+        }>(`
+          SELECT id, "activationTime"::text AS "activationTime"
+          FROM "EmergencyCode"
+        `);
+
+        expect(result.rows.map(({ id }) => id).sort()).toEqual([
+          'air-1',
+          'blue-pediatric',
+          'blue-uci',
+          'blue-urgencia',
+          'green-closed',
+          'green-incomplete',
+          'green-open',
+          'green-partial',
+          'green-stale-flag',
+          'leak-1',
+          'red-1',
+        ]);
+        expect(
+          result.rows.find(({ id }) => id === 'green-closed')?.activationTime,
+        ).toBe('2026-08-24 10:00:00');
+      });
+
+      it('retains every source table under its legacy name', async () => {
+        const result = await client.query<{ legacyCount: string }>(`
+          SELECT COUNT(*) AS "legacyCount"
+          FROM pg_class
+          WHERE relname IN (
+            'CodeGreen_legacy_20260824', 'CodeBlue_legacy_20260824',
+            'CodeAir_legacy_20260824', 'CodeRed_legacy_20260824',
+            'CodeLeak_legacy_20260824'
+          )
+        `);
+
+        expect(Number(result.rows[0].legacyCount)).toBe(5);
+      });
+
+      it('carries over observations, the patient name and the firefighter time', async () => {
+        const result = await client.query(`
+          SELECT id, "observations", "patientName", "firefighterCalledTime"::text AS "firefighterCalledTime"
+          FROM "EmergencyCode"
+          WHERE id IN ('green-open', 'blue-urgencia', 'air-1', 'leak-1', 'red-1', 'blue-uci')
+        `);
+        const byId = Object.fromEntries(
+          result.rows.map((row) => [row.id, row]),
+        );
+
+        expect(byId['green-open'].observations).toBe('Se avisó a guardia');
+        expect(byId['blue-urgencia'].observations).toBe('Paro presenciado');
+        expect(byId['air-1'].observations).toBe('Aterrizaje en curso');
+        expect(byId['leak-1'].observations).toBe('Visto en el pasillo');
+        expect(byId['leak-1'].patientName).toBe('Paciente Prueba');
+        expect(byId['red-1'].firefighterCalledTime).toBe('2026-08-24 10:08:00');
+        expect(byId['blue-uci'].observations).toBeNull();
+      });
+
+      it('keeps the closure of green codes instead of reopening them', async () => {
+        const result = await client.query(`
+          SELECT id, "isClosed", "closedBy", "closedAt"::text AS "closedAt"
+          FROM "EmergencyCode" WHERE "type" = 'GREEN'
+        `);
+        const byId = Object.fromEntries(
+          result.rows.map((row) => [row.id, row]),
+        );
+
+        expect(byId['green-closed']).toMatchObject({
+          isClosed: true,
+          closedBy: 'Dra. Pérez',
+          closedAt: '2026-08-24 10:30:00',
+        });
+        expect(byId['green-incomplete']).toMatchObject({
+          isClosed: true,
+          closedBy: 'Jefe de turno',
+          closedAt: '2026-08-24 13:00:00',
+        });
+        expect(byId['green-open']).toMatchObject({
+          isClosed: false,
+          closedBy: null,
+          closedAt: null,
+        });
+      });
+
+      it('treats a complete closure with a stale flag as closed and drops half-filled closure data', async () => {
+        const result = await client.query(`
+          SELECT id, "isClosed", "closedBy", "closedAt"::text AS "closedAt"
+          FROM "EmergencyCode" WHERE id IN ('green-stale-flag', 'green-partial')
+        `);
+        const byId = Object.fromEntries(
+          result.rows.map((row) => [row.id, row]),
+        );
+
+        expect(byId['green-stale-flag']).toMatchObject({
+          isClosed: true,
+          closedBy: 'Dr. Rojas',
+          closedAt: '2026-08-24 11:20:00',
+        });
+        expect(byId['green-partial']).toMatchObject({
+          isClosed: false,
+          closedBy: null,
+          closedAt: null,
+        });
+      });
+
+      it('rejects closure state for a non-green emergency', async () => {
+        await expect(
+          client.query(`
+            UPDATE "EmergencyCode"
+            SET "isClosed" = false
+            WHERE id = 'blue-uci'
+          `),
+        ).rejects.toMatchObject({ constraint: 'EmergencyCode_closure_check' });
+      });
     });
   });
 
@@ -145,13 +264,7 @@ describe('emergency-code migrations', () => {
         VALUES ('${id}', ${values})
       `);
 
-    const columnNames = async () => {
-      const result = await client.query<{ column_name: string }>(`
-        SELECT column_name FROM information_schema.columns
-        WHERE table_name = 'EmergencyCode'
-      `);
-      return result.rows.map(({ column_name }) => column_name);
-    };
+    let idsBefore: string[];
 
     beforeAll(async () => {
       await client.query(`
@@ -159,34 +272,22 @@ describe('emergency-code migrations', () => {
         VALUES ('operator-2', 'Operador Dos', now());
       `);
 
-      // Variantes de texto libre que permitía la interfaz anterior.
+      // Variantes de texto libre que podía escribir la interfaz anterior.
       await insertEmergency(
-        'blue-urgencia',
+        'blue-variant-prefix',
         '"team"',
         `'BLUE', 'Central', now(), '2026-08-24 11:00:00', 'Urgencias', 'operator-1', 'Equipo urgencia'`,
       );
       await insertEmergency(
-        'blue-pediatric',
+        'blue-variant-pediatric',
         '"team"',
         `'BLUE', 'Central', now(), '2026-08-24 11:01:00', 'Pediatría', 'operator-1', 'Equipo UCI pediatrica'`,
       );
       await insertEmergency(
-        'blue-accent',
+        'blue-variant-accent',
         '"team"',
         `'BLUE', 'Central', now(), '2026-08-24 11:02:00', 'Pediatría', 'operator-1', '  EQUIPO  UCI PEDIÁTRICA '`,
       );
-
-      // Un verde abierto y uno ya cerrado con el modelo anterior (isClosed).
-      await insertEmergency(
-        'green-open',
-        '"event", "police", "isClosed"',
-        `'GREEN', 'Central', now(), '2026-08-24 12:00:00', 'Urgencias', 'operator-1', 'Riña', true, false`,
-      );
-      await client.query(`
-        UPDATE "EmergencyCode"
-        SET "isClosed" = true, "closedBy" = 'Dra. Pérez', "closedAt" = '2026-08-24 10:30:00'
-        WHERE id = 'green-1'
-      `);
     });
 
     it('aborts without changing anything when a team cannot be mapped', async () => {
@@ -217,38 +318,29 @@ describe('emergency-code migrations', () => {
 
     describe('once every team can be mapped', () => {
       beforeAll(async () => {
+        idsBefore = await emergencyIds();
         await client.query(readMigration(TEAMS_MIGRATION));
       });
 
       it('keeps every emergency', async () => {
-        const result = await client.query<{ id: string }>(
-          `SELECT id FROM "EmergencyCode" ORDER BY id`,
-        );
-
-        expect(result.rows.map(({ id }) => id)).toEqual([
-          'air-1',
-          'blue-1',
-          'blue-accent',
-          'blue-pediatric',
-          'blue-urgencia',
-          'green-1',
-          'green-open',
-          'leak-1',
-          'red-1',
-        ]);
+        expect(await emergencyIds()).toEqual(idsBefore);
       });
 
       it('maps the free-text team to the BlueTeam enum', async () => {
         const result = await client.query<{ id: string; teams: string[] }>(`
           SELECT id, "teams"::text[] AS teams
-          FROM "EmergencyCode" WHERE "type" = 'BLUE' ORDER BY id
+          FROM "EmergencyCode" WHERE "type" = 'BLUE'
         `);
 
-        expect(result.rows).toEqual([
-          { id: 'blue-1', teams: ['ICU'] },
-          { id: 'blue-accent', teams: ['PEDIATRIC_ICU'] },
+        expect(
+          [...result.rows].sort((a, b) => a.id.localeCompare(b.id)),
+        ).toEqual([
           { id: 'blue-pediatric', teams: ['PEDIATRIC_ICU'] },
+          { id: 'blue-uci', teams: ['ICU'] },
           { id: 'blue-urgencia', teams: ['EMERGENCY'] },
+          { id: 'blue-variant-accent', teams: ['PEDIATRIC_ICU'] },
+          { id: 'blue-variant-pediatric', teams: ['PEDIATRIC_ICU'] },
+          { id: 'blue-variant-prefix', teams: ['EMERGENCY'] },
         ]);
       });
 
@@ -288,32 +380,39 @@ describe('emergency-code migrations', () => {
         });
       });
 
-      it('keeps legacy closures without a closing operator and open codes open', async () => {
+      it('keeps every legacy closure without a closing operator and open codes open', async () => {
         const result = await client.query(`
           SELECT id, "closedBy", "closedAt"::text AS "closedAt", "closedByOperatorId"
-          FROM "EmergencyCode" WHERE id IN ('green-1', 'green-open') ORDER BY id
+          FROM "EmergencyCode" WHERE "type" = 'GREEN'
         `);
+        const byId = Object.fromEntries(
+          result.rows.map((row) => [row.id, row]),
+        );
 
-        expect(result.rows).toEqual([
-          {
-            id: 'green-1',
-            closedBy: 'Dra. Pérez',
-            closedAt: '2026-08-24 10:30:00',
-            closedByOperatorId: null,
-          },
-          {
-            id: 'green-open',
-            closedBy: null,
-            closedAt: null,
-            closedByOperatorId: null,
-          },
-        ]);
+        expect(byId['green-closed']).toEqual({
+          id: 'green-closed',
+          closedBy: 'Dra. Pérez',
+          closedAt: '2026-08-24 10:30:00',
+          closedByOperatorId: null,
+        });
+        expect(byId['green-stale-flag']).toEqual({
+          id: 'green-stale-flag',
+          closedBy: 'Dr. Rojas',
+          closedAt: '2026-08-24 11:20:00',
+          closedByOperatorId: null,
+        });
+        expect(byId['green-open']).toEqual({
+          id: 'green-open',
+          closedBy: null,
+          closedAt: null,
+          closedByOperatorId: null,
+        });
       });
 
       it('rejects a blue emergency without teams', async () => {
         await expect(
           client.query(`
-            UPDATE "EmergencyCode" SET "teams" = ARRAY[]::"BlueTeam"[] WHERE id = 'blue-1'
+            UPDATE "EmergencyCode" SET "teams" = ARRAY[]::"BlueTeam"[] WHERE id = 'blue-uci'
           `),
         ).rejects.toMatchObject({
           constraint: 'EmergencyCode_type_fields_check',
@@ -354,7 +453,7 @@ describe('emergency-code migrations', () => {
           client.query(`
             UPDATE "EmergencyCode"
             SET "closedBy" = 'Supervisor', "closedAt" = '2026-08-24 13:00:00'
-            WHERE id = 'blue-1'
+            WHERE id = 'blue-uci'
           `),
         ).rejects.toMatchObject({ constraint: 'EmergencyCode_closure_check' });
       });
