@@ -1,7 +1,16 @@
-FROM node:22-alpine AS dependencies
+FROM node:22-alpine AS base
 
-RUN corepack enable
+# Prisma's schema engine (migrate deploy) needs OpenSSL on Alpine.
+RUN apk add --no-cache openssl libc6-compat
+
+# Same version as "packageManager" in package.json. Installed with npm instead of
+# corepack: older corepack builds fail on newer pnpm releases ("Cannot find matching keyid").
+ARG PNPM_VERSION=11.11.0
+RUN npm install -g pnpm@${PNPM_VERSION}
+
 WORKDIR /usr/src/app
+
+FROM base AS dependencies
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
@@ -13,6 +22,7 @@ RUN pnpm exec prisma generate
 RUN pnpm run build
 
 # Explicit release target invoked separately with runtime database secrets.
+# It keeps devDependencies, so it can also run `prisma migrate status` or `db:seed`.
 FROM build AS migrate
 CMD ["pnpm", "run", "db:migrate:deploy"]
 
@@ -21,18 +31,19 @@ RUN pnpm prune --prod
 
 FROM node:22-alpine AS production
 
-RUN apk add --no-cache tzdata
+RUN apk add --no-cache tzdata openssl
 ENV TZ=America/Santiago
 ENV NODE_ENV=production
 
 WORKDIR /usr/src/app
 
 COPY --from=production-dependencies /usr/src/app/node_modules ./node_modules
+COPY --from=build /usr/src/app/package.json ./package.json
 COPY --from=build /usr/src/app/dist ./dist
 COPY --from=build /usr/src/app/prisma ./prisma
 COPY --from=build /usr/src/app/fonts ./fonts
 
 USER node
-EXPOSE 3000
+EXPOSE 3002
 
 CMD ["node", "dist/main.js"]
